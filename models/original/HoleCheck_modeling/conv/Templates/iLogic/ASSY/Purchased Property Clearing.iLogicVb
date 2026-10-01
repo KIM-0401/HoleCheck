@@ -1,0 +1,78 @@
+﻿'Standard Property Setting
+If iProperties.Value("Project", "Description") = "0" Then
+	iProperties.Value("Custom", "Detail Description") = "Processed products"
+ElseIf iProperties.Value("Project", "Description") = "1" Then
+	iProperties.Value("Custom", "Detail Description") = "Purchased processed products"
+	ElseIf iProperties.Value("Project", "Description") = "5" Then
+	iProperties.Value("Custom", "Detail Description") = "Assembly products"
+End If
+
+'Purchased products Property Automation'
+'If BOM Structure is Purchased then Automation'
+Dim doc As Document = ThisDoc.Document
+Dim def As ComponentDefinition = doc.ComponentDefinition
+
+If def.BOMStructure = BOMStructureEnum.kPhantomBOMStructure Then
+	iProperties.Value("Project", "Description") = " "
+	iProperties.Value("Custom", "Detail Description") = " "
+End If
+
+If def.BOMStructure = BOMStructureEnum.kPurchasedBOMStructure Then
+	iProperties.Value("Project", "Description") = "3"
+	iProperties.Value("Custom", "Detail Description") = "Purchased products"
+End If
+
+'If Description is Purchased then Automation'
+If iProperties.Value("Project", "Description") = "3" Then
+	iProperties.Value("Custom", "Detail Description") = "Purchased products"
+	def.BOMStructure = BOMStructureEnum.kPurchasedBOMStructure
+
+	'Segmentation of Zones Required
+	Dim FILENAME As String = ThisDoc.FileName(False) 'without extension
+	Dim SPLIT() As String = FILENAME.Split("_")
+
+	'Declaration of Name to be Designated
+	Dim PartName_Tmp() As String
+	Dim PartName As String = SPLIT(0)
+	Dim Title As String = SPLIT(1)
+	Dim Maker As String = SPLIT(2)
+
+	If SPLIT.Length = 3
+		For i = 0 To SPLIT.Length - 1
+			Select Case i
+
+				Case 0
+					PartName = SPLIT(i)
+				Case 1
+					Title = SPLIT(i)
+				Case 2
+					Maker = SPLIT(i)
+			End Select
+
+		Next
+
+		'Give a split name to where to use it
+		iProperties.Value("Project", "Part Number") = PartName
+		iProperties.Value("Summary", "Title") = Title
+		iProperties.Value("Custom", "MAKER") = Maker
+
+		'Remove Unnecessary Content
+		iProperties.Value("Summary", "Subject") = " "
+		iProperties.Value("Summary", "Company") = " "
+		iProperties.Value("Project", "Project") = " "
+		iProperties.Value("Project", "Stock Number") = " "
+		iProperties.Value("Status", "User Status") = " "
+		iProperties.Value("Summary", "Category") = " "
+		iProperties.Value("Status", "Checked By") = " "
+		iProperties.Value("Status", "Checked Date") = DateString
+		iProperties.Value("Status", "Eng. Approved By") = " "
+		iProperties.Value("Status", "Eng. Approved Date") = DateString
+		iProperties.Value("Status", "Mfg. Approved By") = " "
+		iProperties.Value("Status", "Mfg. Approved Date") = DateString
+
+	Else
+		MessageBox.Show("Property ERROR", "This file name is not approved as a Purchased products.")
+
+	End If
+End If
+iLogicVb.UpdateWhenDone = True

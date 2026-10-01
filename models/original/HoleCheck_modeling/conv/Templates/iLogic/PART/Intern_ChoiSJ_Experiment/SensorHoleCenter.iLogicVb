@@ -1,0 +1,52 @@
+Dim i As Integer
+
+If 길이방향_홀수량 = 1 Then
+	
+	
+	If 센서홀_길이방향 = 폭 / 2 Then
+	   MessageBox.Show("센서가 중앙에 위치합니다", "센서 위치 정렬 결과")
+	
+	ElseIf 센서홀_길이방향 <> 폭 / 2 Then
+		i = MessageBox.Show("센서홀을 중앙에 배치할까요?", "센서홀 배치", MessageBoxButtons.YesNo) ' "yes6, no 7"
+		
+		If i = 6 Then
+			센서홀_길이방향 = 폭 / 2		
+			iLogicVb.UpdateWhenDone = True			
+				MessageBox.Show("센서홀이 중앙에 배치됩니다.", "센서홀 위치")
+
+		ElseIf i = 7 Then
+			센서홀_길이방향 = 센서홀_길이방향
+				MessageBox.Show("센서홀 위치가 유지됩니다." & vbCrLf & "센서홀 위치  =  " & 센서홀_길이방향 & vbCrLf & "브라켓 폭  =  " & 폭, "센서홀 위치")
+		End If
+		
+
+	End If
+
+ 
+
+ElseIf 길이방향_홀수량 > 1  Then
+
+	
+	If 센서홀_길이방향 = (폭 - ((길이방향_홀수량-1) * 길이방향_홀간거리)) / 2  Then
+	   MessageBox.Show("센서가 중앙에 위치합니다", "센서 위치")
+	   
+	
+	ElseIf 센서홀_길이방향 <> (폭 - ((길이방향_홀수량-1) * 길이방향_홀간거리)) / 2  Then
+		i = MessageBox.Show("센서홀을 중안에 배치할까요?", "센서홀 위치 변경여부", MessageBoxButtons.YesNo) ' "yes6, no 7"
+		
+		If i = 6 Then
+			센서홀_길이방향 = (폭 - ((길이방향_홀수량-1) * 길이방향_홀간거리)) / 2
+				iLogicVb.UpdateWhenDone = True
+				MessageBox.Show("센서홀이 중앙에 배치됩니다.", "센서홀 위치")
+
+		ElseIf i = 7 Then
+			센서홀_길이방향 = 센서홀_길이방향
+				MessageBox.Show("센서홀 위치가 유지됩니다.", "센서홀 위치")
+		End If
+
+	End If
+	
+ElseIf 길이방향_홀수량 < 1 Then
+	MessageBox.Show("홀 수량 오류 입니다. 재지정 하세요.", "센서홀 위치")
+
+End If

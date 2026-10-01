@@ -1,0 +1,213 @@
+﻿' <FireOthersImmediately>False</FireOthersImmediately>
+'Hole Color Change
+Dim oDef As ComponentDefinition = ThisDoc.Document.ComponentDefinition
+Dim oHole As HoleFeature
+Dim oHoles As HoleFeatures = oDef.Features.HoleFeatures
+Dim oThreadFeats As ThreadFeatures = oDef.Features.ThreadFeatures
+Dim oPartDoc As PartDocument = ThisDoc.Document
+
+' Each Size Color Setting
+Dim M3 As String = "Cyan"
+Dim M4 As String = "Pink"
+Dim M5 As String = "Red"
+Dim M6 As String = "Yellow"
+Dim M8 As String = "Green"
+Dim M10 As String = "Violet"
+Dim M12 As String = "Orange"
+Dim M14 As String = "Magenta"
+Dim M16 As String = "Blue"
+Dim others As String = "Black"
+Dim PinHole As String = "White Oak"
+
+'Selected Hole
+For Each oHole In oHoles
+	'Tap Hole
+	If oHole.Tapped = True
+		currentType = Feature.ThreadDesignation(oHole.Name)
+		If currentType = "M3x0.5" Then
+			Feature.Color(oHole.Name) = M3
+		ElseIf currentType = "M4x0.7" Then
+			Feature.Color(oHole.Name) = M4
+		ElseIf currentType = "M5x0.8" Then
+			Feature.Color(oHole.Name) = M5
+		ElseIf currentType = "M6x1" Then
+			Feature.Color(oHole.Name) = M6
+		ElseIf currentType = "M8x1.25" Then
+			Feature.Color(oHole.Name) = M8
+		ElseIf currentType = "M10x1.5" Then
+			Feature.Color(oHole.Name) = M10
+		ElseIf currentType = "M12x1.75" Then
+			Feature.Color(oHole.Name) = M12
+		ElseIf currentType = "M14x2" Then
+			Feature.Color(oHole.Name) = M14
+		ElseIf currentType = "M16x2" Then
+			Feature.Color(oHole.Name) = M16
+		Else
+			Feature.Color(oHole.Name) = others
+		End If
+	Else
+		'Clearance Hole
+		If oHole.IsClearanceHole Then
+			Dim HoleType As String = oHole.ClearanceInfo.FastenerSize
+			If HoleType = "M3" Then
+				Feature.Color(oHole.Name) = M3
+			ElseIf HoleType = "M4" Then
+				Feature.Color(oHole.Name) = M4
+			ElseIf HoleType = "M5" Then
+				Feature.Color(oHole.Name) = M5
+			ElseIf HoleType = "M6" Then
+				Feature.Color(oHole.Name) = M6
+			ElseIf HoleType = "M8" Then
+				Feature.Color(oHole.Name) = M8
+			ElseIf HoleType = "M10" Then
+				Feature.Color(oHole.Name) = M10
+			ElseIf HoleType = "M12" Then
+				Feature.Color(oHole.Name) = M12
+			ElseIf HoleType = "M16" Then
+				Feature.Color(oHole.Name) = M16
+			ElseIf HoleType = "Ø3" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø4" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø5" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø6" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø8" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø10" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø12" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø14" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø16" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø18" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø20" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø22" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø24" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø30" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø40" Then
+				Feature.Color(oHole.Name) = PinHole
+			ElseIf HoleType = "Ø50" Then
+				Feature.Color(oHole.Name) = PinHole
+			Else
+				Feature.Color(oHole.Name) = others
+			End If
+		Else
+			Feature.Color(oHole.Name) = others
+		End If
+	End If
+Next
+
+Dim oFeatures As PartFeatures = oPartDoc.ComponentDefinition.Features
+For Each RectPattern As RectangularPatternFeature In oFeatures.RectangularPatternFeatures
+	RectPattern.Appearance = RectPattern.Definition.ParentFeatures(1).Appearance
+Next
+
+For Each CirPattern As CircularPatternFeature In oFeatures.CircularPatternFeatures
+	CirPattern.Appearance = CirPattern.Definition.ParentFeatures(1).Appearance
+Next
+
+For Each MirrPattern As MirrorFeature In oFeatures.MirrorFeatures
+	For i As Integer = 1 To MirrPattern.Faces.Count
+		For Each oFeat As PartFeature In MirrPattern.Definition.ParentFeatures
+			For j As Integer = 1 To oFeat.Faces.Count
+				If oFeat.Faces(j).Evaluator.Area = MirrPattern.Faces(i).Evaluator.Area Then
+					MirrPattern.Faces(i).Appearance = oFeat.Faces(j).Appearance
+				End If
+			Next j
+		Next
+	Next i
+Next
+
+For Each SketchPattern As SketchDrivenPatternFeature In oFeatures.SketchDrivenPatternFeatures
+	SketchPattern.Appearance = SketchPattern.Definition.ParentFeatures(1).Appearance
+Next
+
+'Standard Property Setting
+If iProperties.Value("Project", "Description") = "0" Then
+	iProperties.Value("Custom", "Detail Description") = "Processed products"
+ElseIf iProperties.Value("Project", "Description") = "1" Then
+	iProperties.Value("Custom", "Detail Description") = "Purchased processed products"
+ElseIf iProperties.Value("Project", "Description") = "5" Then
+	iProperties.Value("Custom", "Detail Description") = "Assembly products"
+End If
+
+'Purchased products Property Automation'
+'If BOM Structure is Purchased then Automation'
+Dim doc As Document = ThisDoc.Document
+Dim def As ComponentDefinition = doc.ComponentDefinition
+
+If def.BOMStructure = BOMStructureEnum.kPhantomBOMStructure Then
+	iProperties.Value("Project", "Description") = " "
+	iProperties.Value("Custom", "Detail Description") = " "
+End If
+
+If def.BOMStructure = BOMStructureEnum.kPurchasedBOMStructure Then
+	iProperties.Value("Project", "Description") = "3"
+	iProperties.Value("Custom", "Detail Description") = "Purchased products"
+End If
+
+'If Description is Purchased then Automation'
+If iProperties.Value("Project", "Description") = "3" Then
+	iProperties.Value("Custom", "Detail Description") = "Purchased products"
+	def.BOMStructure = BOMStructureEnum.kPurchasedBOMStructure
+
+	'Segmentation of Zones Required
+	Dim FILENAME As String = ThisDoc.FileName(False) 'without extension
+	Dim SPLIT() As String = FILENAME.Split("_")
+
+	'Declaration of Name to be Designated
+	Dim PartName_Tmp() As String
+	Dim PartName As String = SPLIT(0)
+	Dim Title As String = SPLIT(1)
+	Dim Maker As String = SPLIT(2)
+
+	If SPLIT.Length = 3
+		For i = 0 To SPLIT.Length - 1
+			Select Case i
+
+				Case 0
+					PartName = SPLIT(i)
+				Case 1
+					Title = SPLIT(i)
+				Case 2
+					Maker = SPLIT(i)
+			End Select
+
+		Next
+
+		'Give a split name to where to use it
+		iProperties.Value("Project", "Part Number") = PartName
+		iProperties.Value("Summary", "Title") = Title
+		iProperties.Value("Custom", "MAKER") = Maker
+
+		'Remove Unnecessary Content
+		iProperties.Value("Summary", "Subject") = " "
+		iProperties.Value("Summary", "Company") = " "
+		iProperties.Value("Project", "Project") = " "
+		iProperties.Value("Project", "Stock Number") = " "
+		iProperties.Value("Status", "User Status") = " "
+		iProperties.Value("Summary", "Category") = " "
+		iProperties.Value("Status", "Checked By") = " "
+		iProperties.Value("Status", "Checked Date") = DateString
+		iProperties.Value("Status", "Eng. Approved By") = " "
+		iProperties.Value("Status", "Eng. Approved Date") = DateString
+		iProperties.Value("Status", "Mfg. Approved By") = " "
+		iProperties.Value("Status", "Mfg. Approved Date") = DateString
+
+	Else
+		MessageBox.Show("Property ERROR", "This file name is not approved as a Purchased products.")
+
+	End If
+
+	
+End If
+'iLogicVb.UpdateWhenDone = True

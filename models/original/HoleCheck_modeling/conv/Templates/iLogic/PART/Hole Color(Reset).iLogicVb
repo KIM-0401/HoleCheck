@@ -1,0 +1,32 @@
+﻿' <FireOthersImmediately>False</FireOthersImmediately>
+Dim oPartDocument As PartDocument = ThisDoc.Document
+Dim oHolefeatures As HoleFeatures = oPartDocument.ComponentDefinition.Features.HoleFeatures
+
+For Each oHolefeature As HoleFeature In oHolefeatures
+	Feature.Color(oHolefeature.Name) = "Default"
+
+	Dim oFeatures As PartFeatures = oPartDocument.ComponentDefinition.Features
+	For Each RectPattern As RectangularPatternFeature In oFeatures.RectangularPatternFeatures
+		RectPattern.Appearance = RectPattern.Definition.ParentFeatures(1).Appearance
+	Next
+
+	For Each CirPattern As CircularPatternFeature In oFeatures.CircularPatternFeatures
+		CirPattern.Appearance = CirPattern.Definition.ParentFeatures(1).Appearance
+	Next
+
+	For Each MirrPattern As MirrorFeature In oFeatures.MirrorFeatures
+		For i As Integer = 1 To MirrPattern.Faces.Count
+			For Each oFeat As PartFeature In MirrPattern.Definition.ParentFeatures
+				For j As Integer = 1 To oFeat.Faces.Count
+					If oFeat.Faces(j).Evaluator.Area = MirrPattern.Faces(i).Evaluator.Area Then
+						MirrPattern.Faces(i).Appearance = oFeat.Faces(j).Appearance
+					End If
+				Next j
+			Next
+		Next i
+	Next
+
+	For Each SketchPattern As SketchDrivenPatternFeature In oFeatures.SketchDrivenPatternFeatures
+		SketchPattern.Appearance = SketchPattern.Definition.ParentFeatures(1).Appearance
+	Next
+Next

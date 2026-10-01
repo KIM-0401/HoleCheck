@@ -1,0 +1,33 @@
+﻿
+Dim oDoc As Document = ThisDoc.Document
+' 1. Force document update (recalculates Mass)
+InventorVb.DocumentUpdate()
+' 2. Get Component Definition
+Dim oDef As ComponentDefinition = oDoc.ComponentDefinition
+' 3. Get Physical Mass (kg)
+Dim massValue As Double
+massValue = oDef.MassProperties.Mass
+' 4. Round to 3 decimal places
+massValue = Math.Round(massValue, 3)
+' 5. Build display string
+Dim massText As String
+massText = massValue.ToString("0.000") & " kg"
+' 6. Custom iProperty name
+Dim customPropName As String = "MASS"
+' 7. User Defined Properties
+Dim userProps As PropertySet
+userProps = oDoc.PropertySets.Item("User Defined Properties")
+' 8. Write / Update Custom iProperty (TEXT type)
+Dim propExists As Boolean = False
+
+For Each p As Inventor.Property In userProps
+    If p.Name = customPropName Then
+        p.Value = massText
+        propExists = True
+        Exit For
+    End If
+Next
+
+If Not propExists Then
+    userProps.Add(massText, customPropName)
+End If

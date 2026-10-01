@@ -1,0 +1,99 @@
+﻿Dim oDef As ComponentDefinition = ThisDoc.Document.ComponentDefinition '이 문서의 컨포넌트 정의를 가져와 정의한다.
+Dim oHole As HoleFeature
+Dim oHoles As HoleFeatures = oDef.Features.HoleFeatures
+Dim oThreadFeats As ThreadFeatures = oDef.Features.ThreadFeatures
+Dim oPartDoc As PartDocument = ThisDoc.Document
+
+
+' - 색상 지정
+Dim M3 As String = "일반 남색"
+Dim M4 As String = "PINK"
+Dim M5 As String = "일반 적색"
+Dim M6 As String = "일반 노란색"
+Dim M8 As String = "일반 초록색"
+Dim M10 As String = "일반 보라색"
+Dim M12 As String = "일반 주황색"
+Dim M16 As String = "일반 청색"
+Dim others As String = "BLACK"
+'가능한 색상
+'한글명 : 일반 남색, 일반 노란색, 일반 백색, 일반 보라색, 일반 적색, 일반 주황색, 일반 청색, 일반 초록색, 일반 황동색
+'영문 : Smooth - Yellow,RED,ORANGE,BLACK,GOLD,PINK
+
+
+For Each oHole In oHoles
+	If oHole.Tapped = True
+		currentType = Feature.ThreadDesignation(oHole.Name)
+		If currentType = "M3x0.5" Then
+			Feature.Color(oHole.Name) = M3
+		ElseIf currentType = "M4x0.7" Then
+			Feature.Color(oHole.Name) = M4
+		ElseIf currentType = "M5x0.8" Then
+			Feature.Color(oHole.Name) = M5
+		ElseIf currentType = "M6x1" Then
+			Feature.Color(oHole.Name) = M6
+		ElseIf currentType = "M8x1.25" Then
+			Feature.Color(oHole.Name) = M8
+		ElseIf currentType = "M10x1.5" Then
+			Feature.Color(oHole.Name) = M10
+		ElseIf currentType = "M12x1.75" Then
+			Feature.Color(oHole.Name) = M12
+		ElseIf currentType = "M16x2" Then
+			Feature.Color(oHole.Name) = M16
+		Else
+			Feature.Color(oHole.Name) = others
+		End If
+	Else
+		If oHole.IsClearanceHole Then
+			Dim HoleType As String = oHole.ClearanceInfo.FastenerSize
+				If HoleType = "M3" Then
+					Feature.Color(oHole.Name) = M3
+				ElseIf HoleType = "M4" Then
+					Feature.Color(oHole.Name) = M4
+				ElseIf HoleType = "M5" Then
+					Feature.Color(oHole.Name) = M5
+				ElseIf HoleType = "M6" Then
+					Feature.Color(oHole.Name) = M6
+				ElseIf HoleType = "M8" Then
+					Feature.Color(oHole.Name) = M8
+				ElseIf HoleType = "M10" Then
+					Feature.Color(oHole.Name) = M10
+				ElseIf HoleType = "M12" Then
+					Feature.Color(oHole.Name) = M12
+				ElseIf HoleType = "M16" Then
+					Feature.Color(oHole.Name) = M16
+				Else
+					Feature.Color(oHole.Name) = others
+				End If
+		 Else
+            Feature.Color(oHole.Name) = others
+        End If
+	End If
+Next
+
+Dim oFeatures As PartFeatures = oPartDoc.ComponentDefinition.Features
+For Each RectPattern As RectangularPatternFeature In oFeatures.RectangularPatternFeatures
+	RectPattern.Appearance = RectPattern.Definition.ParentFeatures(1).Appearance
+Next
+
+For Each CirPattern As CircularPatternFeature In oFeatures.CircularPatternFeatures
+	CirPattern.Appearance = CirPattern.Definition.ParentFeatures(1).Appearance
+Next
+
+For Each MirrPattern As MirrorFeature In oFeatures.MirrorFeatures
+	For i As Integer = 1 To MirrPattern.Faces.Count
+		For Each oFeat As PartFeature In MirrPattern.Definition.ParentFeatures
+			For j As Integer = 1 To oFeat.Faces.Count
+				If oFeat.Faces(j).Evaluator.Area = MirrPattern.Faces(i).Evaluator.Area Then
+					MirrPattern.Faces(i).Appearance = oFeat.Faces(j).Appearance
+				End If
+			Next j
+		Next
+	Next i
+Next
+
+For Each SketchPattern As SketchDrivenPatternFeature In oFeatures.SketchDrivenPatternFeatures
+	SketchPattern.Appearance = SketchPattern.Definition.ParentFeatures(1).Appearance
+Next
+
+iLogicVb.UpdateWhenDone = True
+MessageBox.Show("홀 색상 변경 완료")

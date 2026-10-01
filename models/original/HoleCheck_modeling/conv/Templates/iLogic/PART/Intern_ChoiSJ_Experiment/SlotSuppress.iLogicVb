@@ -1,0 +1,14 @@
+
+If 센서홀_슬롯_길이 > 2 Then
+Feature.IsActive("센서 슬롯") = True
+Else
+Feature.IsActive("센서 슬롯") = False
+센서홀_슬롯_길이 = 1
+End If
+
+If 체결홀_슬롯_거리 > 2 Then
+Feature.IsActive("체결홀 슬롯") = True
+Else
+Feature.IsActive("체결홀 슬롯") = False
+체결홀_슬롯_거리 = 1
+End If
