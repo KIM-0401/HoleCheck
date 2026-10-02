@@ -9,3 +9,7 @@ models/cases/*.iam
 models/cases/*.ipt
 models/cases/*.ipj
 *.zip
+models/cases/**/*.iam
+models/cases/**/*.ipt
+models/cases/**/*.ipj
+models/cases/**/OldVersions/
