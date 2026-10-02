@@ -66,6 +66,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ApiProbe.vb" />
+    <Compile Include="AxisMatching.vb" />
     <Compile Include="EntryPoints.vb" />
     <Compile Include="HoleCheckForm.vb">
       <SubType>Form</SubType>

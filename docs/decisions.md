@@ -79,3 +79,27 @@
 - 대안: 
 - 이유: 축 기반 판정은 평행 여부가 먼저 필요
 - 영향 파일: (예정) src/HoleCheckAddIn/AxisMatching.vb, src/HoleCheckAddIn/HoleCheckForm.vb
+
+## W05 · 축간 거리는 평행 판정 후 점-직선 거리로 계산
+- 결정: 두 축이 평행한지 먼저 판정하고, 평행하면 한 축 위의 점에서 다른 축선까지의 수직 거리(점-직선 거리)를 축간 거리로 쓴다
+- 대안: skew line 일반 공식
+- 이유: 구멍 짝은 평행이 기본인데 일반 공식은 평행에서 분모가 0이 되고, 거의 평행이면 먼 곳에서 교차해 거리 0이 나올 수 있음
+- 영향 파일: (예정) src/HoleCheckAddIn/AxisMatching.vb
+
+## W05 · 공차 2개는 후보 범위와 정렬 공차
+- 결정: 축간 거리 ≤ 정렬 공차는 OK, 정렬 공차 초과이면서 후보 범위 이내는 위치 불일치, 후보 범위 초과는 짝 아님
+- 대안: 공차 1개
+- 이유: 1개면 M2(0.707mm)가 "짝 없음"이 되어 위치 NG로 보고되지 않음. 조건은 정렬 공차 < 0.707 < 후보 범위 < 최소 구멍 간격의 절반
+- 영향 파일: src/HoleCheckAddIn/AxisMatching.vb (RunAxisMatching 매개변수 dblCandidateRange · dblAlignmentTolerance)
+
+## W05 · 서로 다른 리프 occurrence끼리 전수 비교, 중복 제거 없음
+- 결정: 원통면 축은 서로 다른 리프 occurrence끼리 전부 비교하고, 한 구멍에 여러 상대가 걸려도 중복을 제거하지 않는다
+- 대안: 가장 가까운 상대 하나만 남기기
+- 이유: 축 방식의 한계를 줄 수로 기록하기 위함
+- 영향 파일: (예정) src/HoleCheckAddIn/AxisMatching.vb
+
+## W05 · 결과 구조에는 숫자와 문자열만 담음
+- 결정: AxisMatchResult에는 숫자와 문자열만 담고 Face 프록시 등 COM 객체는 담지 않는다
+- 대안: Face 프록시 보관
+- 이유: A·B 병렬 작업의 접점. 문서가 바뀌면 COM 참조가 무효화될 수 있음(추정)
+- 영향 파일: src/HoleCheckAddIn/AxisMatching.vb
