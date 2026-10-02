@@ -85,3 +85,15 @@
 - 원인: 설정을 고친 뒤 issues.md에 처리 결과를 다시 적지 않음
 - 처리: 커밋 47ef685에서 해결됨 (OptionStrict Off→On · 기본 Imports 9개 제거 · Inventor Interop 참조 Embed=False/Private=False 추가)
 - 왜 예측 못 했나: issues.md가 append 전용이라 처리 결과를 원래 항목에 반영하는 절차가 없었다
+
+## W05 · RunAxisMatching을 호출하는 곳이 없음 · 이동 목표점이 축 방향으로 어긋날 수 있음
+- 증상: AxisMatching.vb 1~3단계를 구현했지만 HoleCheckForm·EntryPoints에서 RunAxisMatching을 부르는 코드가 없어 Inventor에서 실행해 볼 수 없다. 또 이동 목표점은 두 원통의 BasePoint 중점인데, BasePoint는 축 위 임의의 점이라 구멍 위치에서 축 방향으로 벗어날 수 있다(추정)
+- 원인: 이번 작업 범위가 AxisMatching.vb 하나로 제한됨(HoleCheckForm 수정 금지). 목표점 정의는 지시대로 BasePoint 중점
+- 처리: 미처리. 호출은 B의 HoleCheckForm 실행 버튼에서 연결 예정. 목표점은 실행 결과(HoleCheck_Axis_*.txt)의 dblTargetX/Y/Z를 RangeBox와 대조해 확인
+- 왜 예측 못 했나: A·B 접점을 나눌 때 A 단독으로 실행해 볼 진입점을 정하지 않았다. BasePoint가 축 위 어디에 놓이는지 W04 실측에서 확인하지 않았다
+
+## W05 · 최소 구멍 간격이 README와 probe 어디에도 없음
+- 증상: 후보 범위 상한 조건(최소 구멍 간격의 절반)을 정할 값이 없다
+- 원인: probe는 리프당 원통면 BasePoint를 최대 3개만 기록했고, README 기대값 표에는 구멍 좌표가 없다
+- 처리: Axis txt에 같은 occurrence 안의 최소 축간 거리를 출력해 확정한다. 그 전까지 후보 범위 시작값은 2.0mm
+- 왜 예측 못 했나: W04 실측 항목을 정할 때 개수만 대조하고, 매칭 공차를 정하는 데 필요한 거리 값은 항목에 넣지 않았다
