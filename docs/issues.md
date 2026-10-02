@@ -61,3 +61,27 @@
 - 원인: TapInfo의 골지름 계열 값일 가능성(추정)
 - 처리: 12주차에 정리
 - 왜 예측 못 했나: 탭 홀 지름의 기준 값을 정의하지 않았음
+
+## W04 · 작업 지시가 가리킨 과제 파일 W04-05.md가 없음
+- 증상: B 1·2단계와 A 작업 지시가 모두 docs/weeks/W04-05.md를 먼저 읽으라고 했지만 docs/weeks에는 W03.md·W04.md만 있다. ApiProbe.vb 상단 주석도 "W04-05 임시 진단 코드"로 남았다
+- 원인: (추정 · 확인 필요) 작업 지시에 4·5주차 통합 과제 파일 이름을 미리 적었고 실제 파일은 만들지 않음
+- 처리: 매번 W04.md 기준으로 진행. 파일명·주석은 그대로 둠
+- 왜 예측 못 했나: 작업 지시를 쓸 때 docs/weeks의 실제 파일명과 대조하지 않았다
+
+## W04 · api_paths.md가 api_paths.md.txt로 저장돼 있었음
+- 증상: A 작업 시점에 docs/api_paths.md가 없고 docs/api_paths.md.txt만 있었다. 지시의 "있으면 읽기" 조건에 걸리지 않을 뻔했다. 마감 시점에는 docs/api_paths.md로 바뀌어 커밋됨
+- 원인: (추정) 확장자가 숨겨진 탐색기에서 텍스트 파일 이름을 바꿔 .txt가 남음
+- 처리: 사람이 이름을 바꿈 (커밋 ffe5a14 기준 api_paths.md)
+- 왜 예측 못 했나: 탐색기에서 보이는 파일명만 확인하고 실제 확장자는 확인하지 않았다
+
+## W04 · 탭도 클리어런스도 아닌 일반 드릴 홀도 FastenerSize 읽기가 E_FAIL
+- 증상: probe_block-1에서 FastenerSize E_FAIL이 11건인데 탭 홀은 10개다. 나머지 1건은 파트-1 구멍6(Tapped False · IsClearanceHole False · HoleDiameter 2.1)이다
+- 원인: (추정) 클리어런스 홀이 아니면 ClearanceInfo가 비어 있음. 탭 여부와는 무관
+- 처리: 미처리. decisions.md "Hole 피처 속성은 탭이면 TapInfo, 클리어런스면 ClearanceInfo"는 두 갈래만 다룬다. 일반 드릴 홀 갈래(HoleDiameter만 읽기)를 다음 주에 추가 검토
+- 왜 예측 못 했나: 실측 결과를 정리할 때 탭/클리어런스 두 종류만 있다고 보고, 오류 건수와 탭 홀 수를 대조하지 않았다
+
+## W04 · (해결 확인) vbproj 설정이 CLAUDE.md 규칙과 다름
+- 증상: 위 "W04 · 생성된 vbproj 설정이 CLAUDE.md 규칙과 다름" 항목이 "처리: 미처리"로 남아 있었다
+- 원인: 설정을 고친 뒤 issues.md에 처리 결과를 다시 적지 않음
+- 처리: 커밋 47ef685에서 해결됨 (OptionStrict Off→On · 기본 Imports 9개 제거 · Inventor Interop 참조 Embed=False/Private=False 추가)
+- 왜 예측 못 했나: issues.md가 append 전용이라 처리 결과를 원래 항목에 반영하는 절차가 없었다

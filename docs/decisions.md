@@ -41,7 +41,7 @@
 ## W04 · 조립품 순회는 AllLeafOccurrences 사용, 리프의 Transformation은 부모 변환을 곱하지 않고 그대로 사용
 - 결정: 조립품 순회는 AllLeafOccurrences를 쓰고, 리프의 Transformation에 부모 변환을 곱하지 않는다
 - 대안: SubOccurrences 재귀로 단계별 Transformation을 직접 곱하기
-- 이유: nested_top 실측(36개 리프)에서 직접 곱한 값이 AllLeafOccurrences 값과 약 100~118 어긋났고 리프 단독 값은 일치(차이 0). 리프 Transformation이 누적 변환을 이미 포함하므로 직접 곱하면 이중 적용됨(추정)
+- 이유: nested_top 실측(36개 리프)에서 직접 곱한 값이 AllLeafOccurrences 값과 102.315~129.036(API 원값 cm · 36개 리프 최소~최대) 어긋났고 리프 단독 값은 일치(차이 0). 리프 Transformation이 누적 변환을 이미 포함하므로 직접 곱하면 이중 적용됨(추정)
 - 영향 파일: 없음
 
 ## W04 · 프록시 원통면 Geometry는 조립품 좌표로 취급하고 변환을 곱하지 않음
@@ -55,3 +55,9 @@
 - 대안: 
 - 이유: 탭 홀은 FastenerSize 읽기에 E_FAIL, HoleDiameter 읽기에 Object reference not set 오류
 - 영향 파일: 없음
+
+## W04 · Hole 피처 속성 읽기를 탭 / 클리어런스 / 그 외 드릴 홀 세 갈래로 보완
+- 결정: 위 "Hole 피처 속성은 탭이면 TapInfo, 클리어런스면 ClearanceInfo로 갈라 읽는다"를 세 갈래로 보완한다. (1) 탭(Tapped True) → TapInfo (2) 클리어런스(IsClearanceHole True) → ClearanceInfo와 HoleDiameter (3) 그 외 드릴 홀(둘 다 False) → HoleDiameter만 읽고 ClearanceInfo는 읽지 않는다
+- 대안: 탭 / 클리어런스 두 갈래만 유지
+- 이유: probe_block-1에서 FastenerSize E_FAIL이 11건인데 탭 홀은 10개다. 나머지 1건은 파트-1 구멍6(Tapped False · IsClearanceHole False)이고, 이 홀의 HoleDiameter는 2.1로 읽혔다. 두 갈래만 두면 이런 홀에서 ClearanceInfo를 읽다가 실패한다
+- 영향 파일: 없음 (W05 이후 홀 읽기 코드)
