@@ -31,3 +31,27 @@
 - 대안: iLogic Rule로 집계
 - 이유: 실제 Add-in이 실행되는 경로(Interop 참조 · Option Strict · 프록시 객체)와 같은 환경에서 값을 확인해야 W05 이후 코드에 그대로 옮길 수 있다. iLogic은 늦은 바인딩이라 타입 변환 문제가 드러나지 않는다
 - 영향 파일: src/HoleCheckAddIn/ApiProbe.vb
+
+## W04 · API 길이 단위는 cm이고 읽는 즉시 mm로 변환
+- 결정: API에서 읽은 길이는 cm로 보고 읽는 즉시 ×10 하여 mm로 바꾼다
+- 대안: 문서 기준 단위를 가정만 하고 쓰기
+- 이유: 블록 긴 변 150.000mm 측정값과 Probe RangeBox 15가 일치, HoleDiameter 0.55·0.66·0.9가 M5·M6·M8 클리어런스 5.5·6.6·9.0mm와 일치
+- 영향 파일: 없음
+
+## W04 · 조립품 순회는 AllLeafOccurrences 사용, 리프의 Transformation은 부모 변환을 곱하지 않고 그대로 사용
+- 결정: 조립품 순회는 AllLeafOccurrences를 쓰고, 리프의 Transformation에 부모 변환을 곱하지 않는다
+- 대안: SubOccurrences 재귀로 단계별 Transformation을 직접 곱하기
+- 이유: nested_top 실측(36개 리프)에서 직접 곱한 값이 AllLeafOccurrences 값과 약 100~118 어긋났고 리프 단독 값은 일치(차이 0). 리프 Transformation이 누적 변환을 이미 포함하므로 직접 곱하면 이중 적용됨(추정)
+- 영향 파일: 없음
+
+## W04 · 프록시 원통면 Geometry는 조립품 좌표로 취급하고 변환을 곱하지 않음
+- 결정: 리프 Occurrence의 SurfaceBodies에서 얻은 원통면(프록시) Geometry는 조립품 좌표로 보고 Transformation을 곱하지 않는다
+- 대안: 
+- 이유: 블록-1(36개 리프)과 nested_top(이동+회전, 108건) 모두에서 조립품 좌표로 판정, 부품 좌표 0건
+- 영향 파일: 없음
+
+## W04 · Hole 피처 속성은 탭이면 TapInfo, 클리어런스면 ClearanceInfo로 갈라 읽는다
+- 결정: 탭 홀은 TapInfo, 클리어런스 홀은 ClearanceInfo로 나눠 읽는다
+- 대안: 
+- 이유: 탭 홀은 FastenerSize 읽기에 E_FAIL, HoleDiameter 읽기에 Object reference not set 오류
+- 영향 파일: 없음
