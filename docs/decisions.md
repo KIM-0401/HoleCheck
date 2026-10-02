@@ -25,3 +25,9 @@
 - 대안: AssemblyInfo의 Assembly Guid를 클래스 GUID로 같이 쓰기 · Assembly ComVisible(True)로 바꾸기
 - 이유: 한 번 배포하면 Inventor가 ClientId로 Add-in을 식별하므로 고정값이 필요하다. typelib GUID와 클래스 GUID를 같은 값으로 쓰면 COM 등록 시 ID가 겹친다. Assembly 전체를 ComVisible로 열 필요는 없다
 - 영향 파일: src/HoleCheckAddIn/EntryPoints.vb, src/HoleCheckAddIn/HoleCheckAddIn.addin
+
+## W04 · API 실측을 Add-in 진단 버튼으로 수행
+- 결정: 실측 6항목(단위 · 순회 A/B 비교 · 면·엣지 개수 · HoleFeature 속성 · 패턴·미러 수 · 프록시 좌표계)을 Add-in의 임시 버튼 "API Probe"(ApiProbe.Run)로 실행하고 결과를 바탕화면 HoleCheck_Probe_<문서이름>_<시각>.txt에 API 원값 그대로 저장한다. 같은 부품 정의를 여러 번 배치한 경우 실측 3·4·5는 정의당 1회만 하고 배치 수를 함께 적는다
+- 대안: iLogic Rule로 집계
+- 이유: 실제 Add-in이 실행되는 경로(Interop 참조 · Option Strict · 프록시 객체)와 같은 환경에서 값을 확인해야 W05 이후 코드에 그대로 옮길 수 있다. iLogic은 늦은 바인딩이라 타입 변환 문제가 드러나지 않는다
+- 영향 파일: src/HoleCheckAddIn/ApiProbe.vb
