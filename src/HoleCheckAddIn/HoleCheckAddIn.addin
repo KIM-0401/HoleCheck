@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Addin Type="Standard">
+  <!-- ClassId·ClientId = EntryPoints.vb StandardAddInServer 의 GuidAttribute -->
+  <ClassId>{475D83A4-5AE7-414F-ADED-296ED976490A}</ClassId>
+  <ClientId>{475D83A4-5AE7-414F-ADED-296ED976490A}</ClientId>
+  <DisplayName>HoleCheck</DisplayName>
+  <Description>조립품 구멍 짝 검사</Description>
+  <!-- 상대 경로 · 이 .addin 파일과 같은 폴더 (deploy.ps1이 둘 다 Addins\HoleCheckAddIn\ 에 복사) -->
+  <Assembly>HoleCheckAddIn.dll</Assembly>
+  <LoadOnStartUp>1</LoadOnStartUp>
+  <UserUnloadable>1</UserUnloadable>
+  <Hidden>0</Hidden>
+  <!-- Inventor 2027 = 31.x (Interop 31.0 참조와 일치) -->
+  <SupportedSoftwareVersionGreaterThan>30..</SupportedSoftwareVersionGreaterThan>
+  <DataVersion>1</DataVersion>
+  <UserInterfaceVersion>1</UserInterfaceVersion>
+</Addin>
