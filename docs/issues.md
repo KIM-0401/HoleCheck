@@ -13,3 +13,15 @@
 - 원인: VS 클래스 라이브러리 템플릿 기본값 그대로임. 프로젝트 속성 > 컴파일 / 참조 단계를 아직 진행하지 않음
 - 처리: 미처리. W04 B 항목(Option Strict=On, Interop 참조 Embed=False/CopyLocal=False)과 CLAUDE.md(기본 Imports 끔)에 맞춰 VS 속성 창에서 사람이 바꿔야 함
 - 왜 예측 못 했나: 템플릿 기본값이 Strict Off이고 Imports가 켜진 상태라는 걸 몰랐다. 프로젝트를 만든 시점에 CLAUDE.md 기술 스택 항목과 대조하는 체크 단계가 없었다
+
+## W04 · .addin이 bin\Debug에 복사되지 않음
+- 증상: vbproj에 HoleCheckAddIn.addin(CopyToOutputDirectory=PreserveNewest)을 추가하고 빌드했는데 bin\Debug에 .addin이 없었다. deploy.ps1이 *.addin을 복사하지 못한다
+- 원인: (추정) 프로젝트 파일을 바꾼 뒤 증분 빌드가 새 복사 단계를 반영하지 않았다
+- 처리: 솔루션 다시 빌드(Rebuild Solution) 후 bin\Debug에 복사됨
+- 왜 예측 못 했나: "빌드 성공" 메시지만 보고 출력 폴더 내용은 확인하지 않았다
+
+## W04 · PowerShell에서 한글이 깨져 보임
+- 증상: PowerShell에서 .vb/.addin/.md 파일을 출력하면 한글이 깨져 보인다
+- 원인: BOM 없는 UTF-8 파일을 Windows PowerShell 5.1이 기본 코드페이지(CP949)로 읽는다. 파일 자체는 정상이다(Get-Content -Encoding UTF8로 확인)
+- 처리: 동작에는 영향이 없어 그대로 둔다
+- 왜 예측 못 했나: 화면 표시 문제와 파일 손상을 구분하지 못했다
