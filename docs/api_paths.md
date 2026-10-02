@@ -31,10 +31,11 @@
 | 16 | 패턴·미러 | PartFeatures.CircularPatternFeatures | CircularPatternFeatures | |
 | 16 | 패턴·미러 | PartFeatures.MirrorFeatures | MirrorFeatures | |
 | 추가 | 패턴 | PartFeatures.SketchDrivenPatternFeatures | SketchDrivenPatternFeatures | 계획서에 없음 |
-| 추가 | 압출컷 | PartFeatures.ExtrudeFeatures | ExtrudeFeatures | 피처 없는 구멍 확인용 || 17 | 활성 뷰 | Application.ActiveView | Inventor.View | W05 · Interop 리플렉션으로 확인 |
-| 17 | 카메라 | View.Camera | Inventor.Camera | 읽기 전용 속성 |
-| 17 | 화면 맞춤 | Camera.Fit() | Sub | View.Fit(Optional DoUpdate As Boolean)도 있음 |
-| 17 | 목표점 지정 | Camera.Target | Inventor.Point (get/set) | cm · 조립품 좌표 |
-| 17 | 적용 | Camera.Apply() / Camera.ApplyWithoutTransition() | Sub | Apply는 전환 애니메이션 있음(추정) |
-| 17 | 시점 | Camera.Eye / Camera.UpVector | Point / UnitVector (get/set) | W05 범위 밖 · 이름만 확인 |
-| 17 | 점 생성 | TransientGeometry.CreatePoint(Optional X, Y, Z As Double) | Inventor.Point | Application.TransientGeometry |
+| 추가 | 압출컷 | PartFeatures.ExtrudeFeatures | ExtrudeFeatures | 피처 없는 구멍 확인용 |
+| 17 | 활성 뷰 | Application.ActiveView | Inventor.View | W05 · Interop 리플렉션으로 확인 (W05 · 존재만 확인, 동작은 W10에서 확정) |
+| 17 | 카메라 | View.Camera | Inventor.Camera | 읽기 전용 속성 (W05 · 존재만 확인, 동작은 W10에서 확정) |
+| 17 | 화면 맞춤 | Camera.Fit() | Sub | View.Fit(Optional DoUpdate As Boolean)도 있음 (W05 · 존재만 확인, 동작은 W10에서 확정) |
+| 17 | 목표점 지정 | Camera.Target | Inventor.Point (get/set) | cm · 조립품 좌표 (W05 · 존재만 확인, 동작은 W10에서 확정) |
+| 17 | 적용 | Camera.Apply() / Camera.ApplyWithoutTransition() | Sub | Apply는 전환 애니메이션 있음(추정) (W05 · 존재만 확인, 동작은 W10에서 확정) |
+| 17 | 시점 | Camera.Eye / Camera.UpVector | Point / UnitVector (get/set) | W05 범위 밖 · 이름만 확인 (W05 · 존재만 확인, 동작은 W10에서 확정) |
+| 17 | 점 생성 | TransientGeometry.CreatePoint(Optional X, Y, Z As Double) | Inventor.Point | Application.TransientGeometry (W05 · 존재만 확인, 동작은 W10에서 확정) |
