@@ -67,3 +67,15 @@
 - 대안: WPF
 - 이유: 5주차에 필요한 결과 그리드(DataGridView)와 행 더블클릭 이동에 WinForms로 충분하다
 - 영향 파일: src/HoleCheckAddIn/HoleCheckForm.vb
+
+## W04 · 4·5주차 통합 진행
+- 결정: 4주차와 5주차를 한 과제 파일(docs/weeks/W04-05.md)로 진행한다. 4주차 완료 기준은 관문으로 두고 태그를 남긴다 (관문 1 w04-done · API 실측 w04-probe-done · 관문 2 w05-done)
+- 대안: 
+- 이유: 5주차가 4주차 결과(폼·API 경로)에 직접 의존
+- 영향 파일: docs/weeks/W04-05.md, docs/weeks/W04.md
+
+## W05 · 매칭 공차 2종 정의
+- 결정: 축간 공차 = 두 축선 사이 최단거리(mm), 각도 공차 = 축 방향 평행 허용각(도)
+- 대안: 
+- 이유: 축 기반 판정은 평행 여부가 먼저 필요
+- 영향 파일: (예정) src/HoleCheckAddIn/AxisMatching.vb, src/HoleCheckAddIn/HoleCheckForm.vb
