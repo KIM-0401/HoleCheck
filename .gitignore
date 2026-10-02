@@ -3,3 +3,9 @@ bin/
 obj/
 *.user
 *.suo
+
+models/original/
+models/cases/*.iam
+models/cases/*.ipt
+models/cases/*.ipj
+*.zip
