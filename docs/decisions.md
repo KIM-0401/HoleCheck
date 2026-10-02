@@ -61,3 +61,9 @@
 - 대안: 탭 / 클리어런스 두 갈래만 유지
 - 이유: probe_block-1에서 FastenerSize E_FAIL이 11건인데 탭 홀은 10개다. 나머지 1건은 파트-1 구멍6(Tapped False · IsClearanceHole False)이고, 이 홀의 HoleDiameter는 2.1로 읽혔다. 두 갈래만 두면 이런 홀에서 ClearanceInfo를 읽다가 실패한다
 - 영향 파일: 없음 (W05 이후 홀 읽기 코드)
+
+## W04 · 폼 프레임워크는 WinForms
+- 결정: HoleCheckForm은 WinForms로 구현한다
+- 대안: WPF
+- 이유: 5주차에 필요한 결과 그리드(DataGridView)와 행 더블클릭 이동에 WinForms로 충분하다
+- 영향 파일: src/HoleCheckAddIn/HoleCheckForm.vb
