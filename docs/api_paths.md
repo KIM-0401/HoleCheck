@@ -32,6 +32,9 @@
 | 16 | 패턴·미러 | PartFeatures.MirrorFeatures | MirrorFeatures | |
 | 추가 | 패턴 | PartFeatures.SketchDrivenPatternFeatures | SketchDrivenPatternFeatures | 계획서에 없음 |
 | 추가 | 스케치 기반 패턴 부모 피처 | SketchDrivenPatternFeature.Definition.ParentFeatures | ObjectCollection | 피처 직접 속성 아님 · 실행 미검증 |
+| 추가 | 직사각형 패턴 부모 피처 | RectangularPatternFeature.ParentFeatures | ObjectCollection | 피처 직접 속성 · 실행 검증 · 홀간 거리 확인-1 의 피처 경로에서 확인 |
+| 추가 | 원형 패턴 부모 피처 | CircularPatternFeature.ParentFeatures | ObjectCollection | 피처 직접 속성 · 실행 미검증 · 빌드만 통과 · 원형 패턴 모델 없음 |
+| 추가 | 미러 부모 피처 | MirrorFeature.ParentFeatures | ObjectCollection | 피처 직접 속성 · 실행 검증 · 홀간 거리 확인-1 의 피처 경로에서 확인 |
 | 추가 | 압출컷 | PartFeatures.ExtrudeFeatures | ExtrudeFeatures | 피처 없는 구멍 확인용 |
 | 17 | 활성 뷰 | Application.ActiveView | Inventor.View | W05 · Interop 리플렉션으로 확인 (W05 · 존재만 확인, 동작은 W10에서 확정) |
 | 17 | 카메라 | View.Camera | Inventor.Camera | 읽기 전용 속성 (W05 · 존재만 확인, 동작은 W10에서 확정) |
