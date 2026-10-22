@@ -40,3 +40,10 @@
 | 17 | 적용 | Camera.Apply() / Camera.ApplyWithoutTransition() | Sub | Apply는 전환 애니메이션 있음(추정) (W05 · 존재만 확인, 동작은 W10에서 확정) |
 | 17 | 시점 | Camera.Eye / Camera.UpVector | Point / UnitVector (get/set) | W05 범위 밖 · 이름만 확인 (W05 · 존재만 확인, 동작은 W10에서 확정) |
 | 17 | 점 생성 | TransientGeometry.CreatePoint(Optional X, Y, Z As Double) | Inventor.Point | Application.TransientGeometry (W05 · 존재만 확인, 동작은 W10에서 확정) |
+| 추가 | 색 표시 세트 | Document.HighlightSets (AssemblyDocument.HighlightSets) | Inventor.HighlightSets (get only) | W06 · Interop 리플렉션으로 확인 |
+| 추가 | 색 표시 세트 | HighlightSets.Add() | Inventor.HighlightSet | 인자 없음 (W06) |
+| 추가 | 색 표시 세트 | HighlightSet.Color | Inventor.Color (get/set) | W06 |
+| 추가 | 색 표시 세트 | HighlightSet.AddItem(Entity As Object) | Sub | 조립품에서는 Face 프록시를 넣음 (W06) |
+| 추가 | 색 표시 세트 | HighlightSet.Clear() / HighlightSet.Delete() | Sub | 이름만 확인 · 누적 정리는 W06 범위 밖 |
+| 추가 | 색 생성 | Application.TransientObjects | Inventor.TransientObjects (get only) | W06 |
+| 추가 | 색 생성 | TransientObjects.CreateColor(Red As Byte, Green As Byte, Blue As Byte, Optional Opacity As Double = 1) | Inventor.Color | W06 |

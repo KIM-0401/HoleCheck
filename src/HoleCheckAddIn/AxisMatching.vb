@@ -61,6 +61,8 @@ Public Module AxisMatching
         Public strFeatureState As String = ""
         Public strHoleFeatureName As String = ""
         Public strFeaturePath As String = ""
+        ' W06 · 색 표시용 Face 프록시 · 이 모듈 밖으로는 호출자가 넘긴 목록으로만 내보내고 AxisMatchResult에는 넣지 않는다
+        Public invFace As Inventor.Face
     End Class
 
     ' 리프 하나의 수집 결과 · 진단 출력용
@@ -91,6 +93,18 @@ Public Module AxisMatching
     ' dblCandidateRange · 후보 범위(mm) · 축간 거리가 이보다 크면 짝 아님
     ' dblAlignmentTolerance · 정렬 공차(mm) · 축간 거리가 이하이면 OK, 초과하면서 후보 범위 이내이면 위치 불일치
     Public Function RunAxisMatching(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByVal dblCandidateRange As Double, ByVal dblAlignmentTolerance As Double) As System.Collections.Generic.List(Of AxisMatchResult)
+        Dim strDiagnosticPath As String = ""
+        Return RunAxisMatching(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance,
+                               New System.Collections.Generic.List(Of Inventor.Face)(),
+                               New System.Collections.Generic.List(Of Inventor.Face)(),
+                               strDiagnosticPath)
+    End Function
+
+    ' W06 · 색 표시용 오버로드 · 호출자가 만든 빈 목록 두 개를 채운다 (모듈 수준 보관 없음)
+    ' colHoleFaces · 비교 투입 면 (홀 확정이면서 바깥 링이 아닌 면)
+    ' colOuterRingFaces · 카운터보어 바깥 링으로 제외된 면
+    ' strDiagnosticPath · 저장한 진단 txt 경로 · 호출자가 맨 아래에 줄을 덧붙일 때 쓴다
+    Public Function RunAxisMatching(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByVal dblCandidateRange As Double, ByVal dblAlignmentTolerance As Double, ByVal colHoleFaces As System.Collections.Generic.List(Of Inventor.Face), ByVal colOuterRingFaces As System.Collections.Generic.List(Of Inventor.Face), ByRef strDiagnosticPath As String) As System.Collections.Generic.List(Of AxisMatchResult)
         Dim objCounters As New MatchCounters()
         Dim colLeafSummaries As New System.Collections.Generic.List(Of LeafSummary)()
 
@@ -98,8 +112,17 @@ Public Module AxisMatching
         Dim colHoleAxes As System.Collections.Generic.List(Of CylinderAxis) = SelectHoleAxes(colAxes, objCounters)
         Dim colResults As System.Collections.Generic.List(Of AxisMatchResult) = MatchAxes(colHoleAxes, dblCandidateRange, dblAlignmentTolerance, objCounters)
 
+        For Each objAxis As CylinderAxis In colHoleAxes
+            colHoleFaces.Add(objAxis.invFace)
+        Next
+        For Each objAxis As CylinderAxis In colAxes
+            If objAxis.strFeatureState = strFeatureStateOuterRing Then
+                colOuterRingFaces.Add(objAxis.invFace)
+            End If
+        Next
+
         ' W05 임시 진단 출력 · W06 피처 판정 열 추가
-        WriteDiagnostics(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance, colLeafSummaries, colAxes, colHoleAxes, colResults, objCounters)
+        strDiagnosticPath = WriteDiagnostics(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance, colLeafSummaries, colAxes, colHoleAxes, colResults, objCounters)
 
         Return colResults
     End Function
@@ -135,6 +158,7 @@ Public Module AxisMatching
                             objAxis.dblDirectionZ = invCylinder.AxisVector.Z
                             objAxis.dblRadius = invCylinder.Radius * dblCentimeterToMillimeter
 
+                            objAxis.invFace = invFace
                             ClassifyFaceFeature(invFace, objAxis)
 
                             colAxes.Add(objAxis)
@@ -371,8 +395,8 @@ Public Module AxisMatching
         End Try
     End Function
 
-    ' 3단계 · W05 임시 진단 출력 · ApiProbe와 같은 방식으로 바탕화면에 저장
-    Private Sub WriteDiagnostics(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByVal dblCandidateRange As Double, ByVal dblAlignmentTolerance As Double, ByVal colLeafSummaries As System.Collections.Generic.List(Of LeafSummary), ByVal colAxes As System.Collections.Generic.List(Of CylinderAxis), ByVal colHoleAxes As System.Collections.Generic.List(Of CylinderAxis), ByVal colResults As System.Collections.Generic.List(Of AxisMatchResult), ByVal objCounters As MatchCounters)
+    ' 3단계 · W05 임시 진단 출력 · ApiProbe와 같은 방식으로 바탕화면에 저장 · 저장 경로를 돌려준다
+    Private Function WriteDiagnostics(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByVal dblCandidateRange As Double, ByVal dblAlignmentTolerance As Double, ByVal colLeafSummaries As System.Collections.Generic.List(Of LeafSummary), ByVal colAxes As System.Collections.Generic.List(Of CylinderAxis), ByVal colHoleAxes As System.Collections.Generic.List(Of CylinderAxis), ByVal colResults As System.Collections.Generic.List(Of AxisMatchResult), ByVal objCounters As MatchCounters) As String
         Dim objText As New System.Text.StringBuilder()
         objText.AppendLine("단위 mm (API cm ×10) · 좌표는 조립품 좌표")
         objText.AppendLine("문서: " & invAssemblyDocument.FullFileName)
@@ -452,7 +476,8 @@ Public Module AxisMatching
         System.IO.File.WriteAllText(strPath, objText.ToString(), New System.Text.UTF8Encoding(True))
 
         System.Windows.Forms.MessageBox.Show("저장됨" & System.Environment.NewLine & strPath, "Feature Matching")
-    End Sub
+        Return strPath
+    End Function
 
     ' 진단 · 원통면 전체 목록
     Private Sub WriteCylinderList(ByVal objText As System.Text.StringBuilder, ByVal colAxes As System.Collections.Generic.List(Of CylinderAxis))

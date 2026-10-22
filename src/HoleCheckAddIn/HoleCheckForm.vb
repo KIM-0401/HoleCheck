@@ -3,6 +3,7 @@ Option Explicit On
 
 ' 디자이너 파일 없이 코드로 만든 폼 · W05 원통면 축 기반 1차 매칭 결과 표시
 ' 입력 2개(후보 범위 · 정렬 공차) → RunAxisMatching → 4열 그리드 · 더블클릭 시 Camera.Fit 후 목표점으로 이동
+' W06 · 실행 후 HighlightSet 색 표시 (홀 면 초록 · 바깥 링 주황)
 Public Class HoleCheckForm
     Inherits System.Windows.Forms.Form
 
@@ -23,6 +24,11 @@ Public Class HoleCheckForm
     Private objStatusLabel As System.Windows.Forms.Label
     Private objResultGrid As System.Windows.Forms.DataGridView
     Private objSelectionLabel As System.Windows.Forms.Label
+
+    ' W06 · 하이라이트 세트 수명 확인용 진단 · 함수가 끝나도 참조를 유지한다
+    ' 실행할 때마다 새 세트로 덮어쓰기만 하고 이전 세트는 정리하지 않는다 (누적 · 문서 전환 처리는 10주차)
+    Private invHoleSet As Inventor.HighlightSet
+    Private invOuterRingSet As Inventor.HighlightSet
 
     Public Sub New(ByVal invInventorApplication As Inventor.Application)
         MyBase.New()
@@ -138,11 +144,97 @@ Public Class HoleCheckForm
                 Return
             End If
 
-            colResults = AxisMatching.RunAxisMatching(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance)
+            Dim colHoleFaces As New System.Collections.Generic.List(Of Inventor.Face)()
+            Dim colOuterRingFaces As New System.Collections.Generic.List(Of Inventor.Face)()
+            Dim strDiagnosticPath As String = ""
+            colResults = AxisMatching.RunAxisMatching(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance, colHoleFaces, colOuterRingFaces, strDiagnosticPath)
             FillGrid()
+
+            HighlightFaces(colHoleFaces, colOuterRingFaces, strDiagnosticPath)
         Catch objException As System.Exception
             System.Windows.Forms.MessageBox.Show(objException.Message & System.Environment.NewLine & System.Environment.NewLine & objException.StackTrace, "HoleCheck · 실행 오류")
         End Try
+    End Sub
+
+    ' W06 · 색 표시 · 홀 면 초록 · 바깥 링 주황 · 실행할 때마다 활성 문서에 HighlightSet 2개를 새로 만든다
+    ' 세트는 폼 필드에 덮어써 보관하고, 이전 세트는 지우지 않는다 (누적 정리는 W06 범위 밖) · 모델은 바꾸지 않는다
+    ' 결과 "색 표시 · 성공 N · 실패 N" 과 세트 진단 2줄은 진단 txt 맨 아래(카운터 끝)에 덧붙인다
+    Private Sub HighlightFaces(ByVal colHoleFaces As System.Collections.Generic.List(Of Inventor.Face), ByVal colOuterRingFaces As System.Collections.Generic.List(Of Inventor.Face), ByVal strDiagnosticPath As String)
+        Dim invAssemblyDocument As Inventor.AssemblyDocument = TryCast(invApplication.ActiveDocument, Inventor.AssemblyDocument)
+        If invAssemblyDocument Is Nothing Then
+            Return
+        End If
+
+        Dim intSuccessCount As Integer = 0
+        Dim intFailureCount As Integer = 0
+
+        invHoleSet = invAssemblyDocument.HighlightSets.Add()
+        invHoleSet.Color = invApplication.TransientObjects.CreateColor(0, 255, 0)
+        AddFacesToHighlightSet(invHoleSet, colHoleFaces, intSuccessCount, intFailureCount)
+        Dim strHoleCount As String = ReadHighlightSetCount(invHoleSet)
+        Dim strHoleTypeName As String = ReadFirstItemTypeName(invHoleSet)
+
+        invOuterRingSet = invAssemblyDocument.HighlightSets.Add()
+        invOuterRingSet.Color = invApplication.TransientObjects.CreateColor(255, 128, 0)
+        AddFacesToHighlightSet(invOuterRingSet, colOuterRingFaces, intSuccessCount, intFailureCount)
+        Dim strOuterRingCount As String = ReadHighlightSetCount(invOuterRingSet)
+        Dim strOuterRingTypeName As String = ReadFirstItemTypeName(invOuterRingSet)
+
+        If strDiagnosticPath <> "" Then
+            Dim objText As New System.Text.StringBuilder()
+            objText.AppendLine("색 표시 · 성공 " & intSuccessCount.ToString() & " · 실패 " & intFailureCount.ToString())
+            objText.AppendLine("색 표시 진단 · 홀 세트 Count " & strHoleCount & " / 시도 " & colHoleFaces.Count.ToString() &
+                               " · 바깥 링 세트 Count " & strOuterRingCount & " / 시도 " & colOuterRingFaces.Count.ToString())
+
+            ' 첫 아이템 TypeName · 읽을 수 있는 세트만 적는다
+            Dim colTypeNameParts As New System.Collections.Generic.List(Of String)()
+            If strHoleTypeName <> "" Then
+                colTypeNameParts.Add("홀 세트 " & strHoleTypeName)
+            End If
+            If strOuterRingTypeName <> "" Then
+                colTypeNameParts.Add("바깥 링 세트 " & strOuterRingTypeName)
+            End If
+            If colTypeNameParts.Count > 0 Then
+                objText.AppendLine("색 표시 진단 · 첫 아이템 TypeName · " & String.Join(" · ", colTypeNameParts))
+            End If
+
+            ' 기존 파일 끝에 덧붙이므로 BOM 없이 쓴다
+            System.IO.File.AppendAllText(strDiagnosticPath, objText.ToString(), New System.Text.UTF8Encoding(False))
+        End If
+    End Sub
+
+    ' W06 진단 · HighlightSet.Count (Interop: Count As Int32) · 실패하면 예외 메시지
+    Private Function ReadHighlightSetCount(ByVal invHighlightSet As Inventor.HighlightSet) As String
+        Try
+            Return invHighlightSet.Count.ToString()
+        Catch objException As System.Exception
+            Return "읽기 실패(" & objException.Message & ")"
+        End Try
+    End Function
+
+    ' W06 진단 · HighlightSet.Item(Index As Int32) As Object 의 첫 아이템 · 읽지 못하면 빈 문자열
+    ' 인덱스 1부터 (Inventor 컬렉션 관례 · 추정)
+    Private Function ReadFirstItemTypeName(ByVal invHighlightSet As Inventor.HighlightSet) As String
+        Try
+            If invHighlightSet.Count < 1 Then
+                Return ""
+            End If
+            Return Microsoft.VisualBasic.Information.TypeName(invHighlightSet.Item(1))
+        Catch
+            Return ""
+        End Try
+    End Function
+
+    ' 면 하나가 실패해도 나머지는 계속 넣는다
+    Private Sub AddFacesToHighlightSet(ByVal invHighlightSet As Inventor.HighlightSet, ByVal colFaces As System.Collections.Generic.List(Of Inventor.Face), ByRef intSuccessCount As Integer, ByRef intFailureCount As Integer)
+        For Each invFace As Inventor.Face In colFaces
+            Try
+                invHighlightSet.AddItem(invFace)
+                intSuccessCount += 1
+            Catch
+                intFailureCount += 1
+            End Try
+        Next
     End Sub
 
     ' OK 줄도 전부 표시

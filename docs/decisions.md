@@ -133,3 +133,16 @@
 - 대안: 보고서 기재값 148에 맞추기 위해 바깥 링 필터를 완화
 - 이유: 감소 24줄이 바깥 링 제외 면 24개와 일치하고 한 구멍이 한 줄로 나옴. :1 배치와 :2 배치가 동일하게 줄어 필터가 일관됨. 148로 맞추려면 :2 배치를 걸러내지 않는 상태가 필요해 한 구멍이 두 줄이 됨. 148은 보고서 기재값이며 계산 조건이 문서에 없어 재현 불가
 - 영향 파일: docs/weeks/W06.md
+
+## W06 · 색 표시용 Face 프록시는 호출자가 넘긴 목록으로 받음
+- 결정: RunAxisMatching에 오버로드를 하나 추가해 호출자가 만든 빈 List(Of Inventor.Face) 두 개(홀 면 · 바깥 링 면)를 채우고, 진단 txt 경로를 ByRef로 돌려준다. 기존 3인자 시그니처는 남겨 두고 새 오버로드를 부른다. Face 프록시는 내부 CylinderAxis.invFace에만 담고 AxisMatchResult에는 넣지 않는다. 홀 면 = 비교 투입 면(SelectHoleAxes 반환), 바깥 링 면 = strFeatureState가 "바깥 링 제외"인 면
+- 대안: 모듈 수준 속성(마지막 실행의 면 목록)에 보관 · AxisMatchResult에 Face 추가
+- 이유: W05 결정(결과 구조에는 숫자와 문자열만)을 지킴. 모듈 수준 보관은 실행이 끝난 뒤에도 COM 참조가 남고 문서가 바뀌면 무효가 될 수 있어(추정) 실행 한 번 동안만 쓰는 지역 목록이 안전함. 진단 txt는 RunAxisMatching 안에서 먼저 저장되므로 색 표시 결과 줄은 폼이 그 경로에 덧붙인다
+- 영향 파일: src/HoleCheckAddIn/AxisMatching.vb (CylinderAxis · RunAxisMatching · CollectCylinderAxes · WriteDiagnostics), src/HoleCheckAddIn/HoleCheckForm.vb (OnRunClick · HighlightFaces · AddFacesToHighlightSet)
+
+## W06 · 하이라이트 세트를 폼 필드로 보관
+- 결정: invHoleSet · invOuterRingSet을 HighlightFaces의 지역 변수에서 HoleCheckForm의 Private 필드로 옮긴다. 실행할 때마다 새 세트로 덮어쓰기만 하고 이전 세트는 지우지 않는다. 같은 실행에서 세트 Count · 시도 건수 · 첫 아이템 TypeName을 진단 txt 끝에 적는다
+- 대안: 지역 변수 유지 · 문서 참조와 함께 보관하고 이전 세트를 정리
+- 이유: 지역 변수 수명 확인용 진단. 함수가 끝나 참조가 사라지면 색이 사라지는지 가르기 위함. 10주차에서 문서 참조와 함께 보관하는 방식으로 대체 예정
+- 영향 파일: src/HoleCheckAddIn/HoleCheckForm.vb (필드 invHoleSet · invOuterRingSet · HighlightFaces · ReadHighlightSetCount · ReadFirstItemTypeName)
+- 확인: 수명 연장 후 파트-1 계열에서 초록, 파트-6:1 에서 작은 원 초록 · 큰 원 주황 표시 확인. 진단 Count 293 / 24 가 시도 건수와 일치
