@@ -151,3 +151,35 @@
 - 원인: (추정) snapshot.ps1의 -Exclude가 최상위 항목에만 적용되고 하위 폴더에는 적용되지 않음
 - 처리: 이번 주는 범위 밖이라 스크립트를 고치지 않음. 용량만 커지고 소스·문서는 정상 포함. 후속 주차에서 제외 방식 수정 검토
 - 왜 예측 못 했나: 스크립트 작성 시 하위 폴더 제외 동작을 실제 zip 내용으로 확인하지 않았다
+
+## W06 · 6-2 기준선 실측 전에 커밋되지 않은 W06 코드가 작업 폴더에 있었음
+- 증상: git diff w05-done --stat -- src 에 AxisMatching.vb 193줄 추가·9줄 삭제가 나옴. 커밋은 없고 작업 폴더 수정만 있었음
+- 원인: 6-3·6-4 범위(피처 추적 · 홀 확정 · 바깥 링 제외)가 6-2 실측 전에 먼저 구현·저장됨. 파일명 접두 Axis→Feature, 결과 줄 수가 바뀌는 변경이라 그대로 실행하면 기준선이 6주차 결과가 됨
+- 처리: 현재 코드를 WIP 커밋으로 보존 후 git worktree 로 w05-done 을 별도 폴더에 빌드·배포해 M7 실측. 이후 원래 폴더로 복귀
+- 왜 예측 못 했나: 6-2 착수 전에 git status 로 src 의 미커밋 변경을 확인하는 단계가 없었다. 6-3 작업 지시가 실행 순서(6-2 → 6-3)를 강제하지 않았다.
+
+## W06 · BC30574 Option Strict On 런타임 바인딩 오류 (AxisMatching.vb 234줄)
+- 증상: VS2022 빌드에서 BC30574 "Option Strict On에서는 런타임에 바인딩을 사용할 수 없습니다." · AxisMatching.vb 234줄 GetParentFeatures 의 CType(invFeature, Inventor.SketchDrivenPatternFeature).ParentFeatures
+- 원인: Inventor 2027 Interop의 SketchDrivenPatternFeature 인터페이스에는 ParentFeatures 속성이 없다. ParentFeatures는 SketchDrivenPatternFeature.Definition(SketchDrivenPatternDefinition)에 ObjectCollection으로 있다. 정적 형식에 없는 멤버를 COM 인터페이스에서 부르자 컴파일러가 런타임 바인딩으로 처리하려 했고, Option Strict On이 이를 막음. Rectangular·Circular 패턴과 Mirror 피처는 피처 자체에 ParentFeatures(ObjectCollection)가 있어 문제없음
+- 처리: 234줄을 CType(invFeature, Inventor.SketchDrivenPatternFeature).Definition.ParentFeatures 로 수정. 나머지 3종과 판정 로직은 그대로. Option Strict는 유지
+- 왜 예측 못 했나: 코드 작성 시 "패턴·미러 피처는 모두 ParentFeatures를 가진다"고 가정하고, 4종 각각의 멤버를 Interop(Autodesk.Inventor.Interop.dll)에서 확인하지 않았다. 앞선 작업 보고에서 SketchDrivenPatternFeature 이름만 확인 필요로 적었고, 멤버 위치는 확인 대상으로 올리지 않았다
+- 검증 범위: SketchDrivenPatternFeature 분기(.Definition.ParentFeatures)는 빌드만 통과했고 실행된 적이 없다. M1~M7과 홀간 거리 확인-1 의 피처 경로에는 RectangularPattern · Mirror 만 나왔다. 스케치 기반 패턴 모델이 필요하다.
+- 왜 예측 못 했나: 4종 패턴·미러가 모두 ParentFeatures 를 같은 위치에 가진다고 가정하고 작성했다. Interop 멤버를 타입별로 확인하지 않았다.
+
+## W06 · 결과 줄이 보고서 기재값 148이 아니라 137로 나옴
+- 증상: 홀간 거리 확인-1 실행 결과 137줄 (OK 77 · 위치 불일치 60). 148은 W06-07 보고서에만 적힌 값이며 계획서 v4에는 없음
+- 원인: 쌍별 대조(W06_vs_W05_pair_compare.md)에서 감소 24줄 = 바깥 링 제외 면 24개로 확인. 변하지 않은 13쌍은 값까지 동일. (W06 OK 77) + (W05 위치 불일치 71) = 148 로 보고서 값과 일치하므로, 보고서가 OK 감소분(13)만 반영했을 가능성이 있음(추정 · 보고서 시점의 코드와 실행 결과가 없어 확정 불가)
+- 처리: 137을 기준값으로 채택. 148에 맞추기 위한 코드 변경은 하지 않음
+- 왜 예측 못 했나: 보고서 기재값을 W05 txt에서 재계산하지 않고 예측표에 그대로 옮겼다
+
+## W06 · 카운터보어 바깥 링 제외로 지름 정보가 결과에 남지 않음
+- 증상: 제외된 24개 면의 지름(15 · 11 · 10 · 8 등)이 결과에 없음
+- 원인: 의도된 설계(제외 시 버림). 이후 "버리지 않고 보관"으로 전환하는 이유가 됨
+- 처리: 이번 주는 한계로 기록. 7주차에서 지름 리스트 보관으로 바뀜
+- 왜 예측 못 했나: 필터링은 정보를 버린다는 점을 설계 시 따로 따지지 않았다
+
+## W06 · M7 압출컷 구멍이 홀로 인식되지 않아 짝이 사라짐
+- 증상: W05 OK 2줄 → W06 0줄. 윗판 면 판정 "홀 아님" (경로 kExtrudeFeatureProxyObject:돌출2)
+- 원인: 압출컷은 ExtrudeFeature로 기록되고 HoleFeature 조상이 없음
+- 처리: 이번 주는 억지로 잡지 않고 한계로 기록. 7주차 EdgeLoop 수집에서 해결
+- 왜 예측 못 했나: 예측했다. W06 계획서에 반례로 명시됨

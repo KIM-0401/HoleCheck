@@ -1,0 +1,40 @@
+﻿단위 mm (API cm ×10) · 좌표는 조립품 좌표
+문서: C:\capstone\HoleCheck\models\cases\M7_압출컷\M7.iam
+시각: 2026-10-23 01:45:04
+판정 재료: 피처 기반 (W06) · HoleFeature 조상이 있는 원통면 · 카운터보어 바깥 링 제외 · 재귀 깊이 상한 6
+후보 범위 2 mm · 정렬 공차 0.1 mm · 평행 허용각 0.1 도
+
+==== occurrence별 원통면 수 ====
+번호	occurrence	부품 정의	원통면	읽기 실패 면	홀 확정	바깥 링 제외	비교 투입	리프 오류
+0	M7_아랫판:1	M7_아랫판.ipt	2	0	2	0	2	
+1	M7_윗판:1	M7_윗판.ipt	2	0	0	0	0	
+
+==== 원통면 전체 목록 (4개) ====
+리프 번호	occurrence	지름	점X	점Y	점Z	방향X	방향Y	방향Z	피처 판정	HoleFeature	피처 경로
+0	M7_아랫판:1	4.917	-1.0066022089934756E-14	-107.04699910719626	-20.000000000000004	0	1	0	홀	구멍1	kHoleFeatureProxyObject:구멍1
+0	M7_아랫판:1	4.917	4.144832625267251E-15	-107.04699910719626	19.999999999999996	0	1	0	홀	구멍1	kHoleFeatureProxyObject:구멍1
+1	M7_윗판:1	6.6000000000000005	-8.948341015002599E-15	20	-20	0	-1	0	홀 아님		kExtrudeFeatureProxyObject:돌출2
+1	M7_윗판:1	6.6000000000000005	7.0388705395996584E-15	20	20	0	-1	0	홀 아님		kExtrudeFeatureProxyObject:돌출2
+
+==== 같은 occurrence 안의 구멍 간격 (평행 · 동축 0.001 mm 이하 제외 · 판정에 쓰지 않음) ====
+리프 번호	occurrence	최소 축간 거리
+0	M7_아랫판:1	40
+1	M7_윗판:1	40
+전체 최소: 40 mm · M7_아랫판:1 (리프 번호 0)
+
+==== 결과 전체 (0줄) ====
+strErrorKind	dblAxisDistance	dblDiameterA	dblDiameterB	strOccurrenceNameA	strOccurrenceNameB	dblTargetX	dblTargetY	dblTargetZ
+
+==== 카운터 ====
+총 원통면: 4
+읽기 실패 면 (건너뜀): 0
+피처 판정 · 홀 확정: 2
+피처 판정 · 홀 아님 (제외): 2
+피처 판정 · 읽기 실패 (제외): 0
+카운터보어 바깥 링 제외: 0
+비교 투입 원통면: 2
+비교 횟수 (서로 다른 occurrence 쌍): 0
+평행 아님 제외: 0
+후보 범위 밖: 0
+OK: 0
+위치 불일치: 0
