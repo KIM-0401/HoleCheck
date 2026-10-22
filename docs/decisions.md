@@ -109,3 +109,21 @@
 - 대안: 후보 범위를 더 넓히기
 - 이유: Axis txt 실측에서 같은 occurrence 안 구멍 사이 최소 축간 거리가 10mm(파트-4:4 등)라 절반인 5mm가 상한. 2.0은 그 안이고, 위치 불일치 최대값은 1.5mm(파트-1:3 ↔ 파트-2:4)라 2.0 안에 모두 들어옴
 - 영향 파일: 없음 (폼 입력 시작값)
+
+## W06 · 피처 필터는 수집과 짝 계산 사이에 끼우고 RunAxisMatching 시그니처는 유지
+- 결정: CollectCylinderAxes에서 원통면마다 피처 판정(홀 / 홀 아님 / 피처 읽기 실패)을 문자열로 적고, 새 단계 SelectHoleAxes가 홀 면만 골라 MatchAxes에 넘긴다. MatchAxes와 RunAxisMatching 시그니처는 바꾸지 않아 폼(HoleCheckForm)은 수정하지 않는다. 진단 txt 이름은 HoleCheck_Feature_로 바꿔 W05 Axis txt와 나란히 대조한다
+- 대안: 축 기반·피처 기반을 함께 돌리는 별도 함수 + 폼 선택 입력
+- 이유: W06 목표가 짝짓기 로직을 고정하고 재료만 바꾸는 것. W05 Axis txt가 이미 대조 기준으로 남아 있어 두 경로를 동시에 유지할 필요가 없고, 폼 변경은 A 범위 밖
+- 영향 파일: src/HoleCheckAddIn/AxisMatching.vb
+
+## W06 · ParentFeatures는 패턴·미러 4종에서만 읽음
+- 결정: ParentFeatures는 RectangularPatternFeature · CircularPatternFeature · MirrorFeature · SketchDrivenPatternFeature만 TypeOf로 변환해 읽고, 그 밖의 피처는 부모 없음으로 본다. CreatedByFeature가 깊이 0, 깊이 6에서 멈추고, 방문 키는 피처 이름(부품 문서 안에서 고유)으로 쓴다
+- 대안: 리플렉션(InvokeMember)으로 모든 피처의 ParentFeatures 시도
+- 이유: ParentFeatures는 PartFeature 공통 멤버가 아니고, Option Strict On에서는 늦은 바인딩을 쓸 수 없음. 피처 경로를 진단 txt에 남기므로 빠진 피처 종류가 있으면 실측에서 보임
+- 영향 파일: src/HoleCheckAddIn/AxisMatching.vb (FindHoleAncestor · GetParentFeatures)
+
+## W06 · 바깥 링 묶음의 축 일치 기준은 W05 동축 임계값 재사용
+- 결정: 같은 리프 · 같은 HoleFeature 이름 · 평행(0.1도) · 축간 거리 0.001mm 이하이면 한 묶음으로 보고, 최소 반지름 면만 남긴다. 나머지는 "바깥 링 제외"로 표시한다
+- 대안: 새 임계값 정의
+- 이유: W05 진단(같은 occurrence 안 구멍 간격)에서 이미 쓰는 동축 기준(dblCoaxialDistanceThreshold)이고, 실측 최소 간격 10mm와 거리가 충분히 멂. 패턴·미러 복제는 HoleFeature 이름이 같아도 축이 달라 따로 묶인다
+- 영향 파일: src/HoleCheckAddIn/AxisMatching.vb (SelectHoleAxes)
