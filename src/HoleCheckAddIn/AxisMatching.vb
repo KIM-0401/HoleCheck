@@ -220,6 +220,7 @@ Public Module AxisMatching
     End Function
 
     ' W06 · ParentFeatures는 PartFeature 공통 멤버가 아니라 패턴·미러 피처에만 있다 · 그 외 피처는 Nothing
+    '       SketchDrivenPatternFeature는 피처에 ParentFeatures가 없고 Definition(SketchDrivenPatternDefinition)에 있다
     Private Function GetParentFeatures(ByVal invFeature As Inventor.PartFeature) As Inventor.ObjectCollection
         If TypeOf invFeature Is Inventor.RectangularPatternFeature Then
             Return CType(invFeature, Inventor.RectangularPatternFeature).ParentFeatures
@@ -231,7 +232,7 @@ Public Module AxisMatching
             Return CType(invFeature, Inventor.MirrorFeature).ParentFeatures
         End If
         If TypeOf invFeature Is Inventor.SketchDrivenPatternFeature Then
-            Return CType(invFeature, Inventor.SketchDrivenPatternFeature).ParentFeatures
+            Return CType(invFeature, Inventor.SketchDrivenPatternFeature).Definition.ParentFeatures
         End If
         Return Nothing
     End Function
