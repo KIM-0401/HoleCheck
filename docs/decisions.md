@@ -146,3 +146,19 @@
 - 이유: 지역 변수 수명 확인용 진단. 함수가 끝나 참조가 사라지면 색이 사라지는지 가르기 위함. 10주차에서 문서 참조와 함께 보관하는 방식으로 대체 예정
 - 영향 파일: src/HoleCheckAddIn/HoleCheckForm.vb (필드 invHoleSet · invOuterRingSet · HighlightFaces · ReadHighlightSetCount · ReadFirstItemTypeName)
 - 확인: 수명 연장 후 파트-1 계열에서 초록, 파트-6:1 에서 작은 원 초록 · 큰 원 주황 표시 확인. 진단 Count 293 / 24 가 시도 건수와 일치
+
+## W06 · 검사 대상 조립품 선정
+- 결정: Buffer Prep Skid.iam 을 검사 대상 후보 조립품으로 선정한다
+  경로: C:\Users\localadmin\Downloads\autodesk_inventor_2022_samples\autodesk_inventor_2022_samples\Models\Tube & Pipe\Buffer Prep Skid\Buffer Prep Skid.iam
+- 대안: 스캔 스크립트(find-sample-assemblies.ps1 · 참조 파일명 수 6~60 기준)에서 후보 88개가 나왔다.
+  (Models 249개 중. 상위: Blower Frame · PC Chassis · Stapler Channel 등)
+  대안 후보는 열어서 비교하지 않았다. 탈락 사유는 확인하지 않았다(미검토).
+- 이유: v4 6주차 조건 중 "Inventor 2022 샘플" · "Inventor 원본(샘플 폴더)" 은 충족. 사진상 탱크 뚜껑 등에 원형 볼트 구멍이 보인다.
+  v4 11주차의 상한 도달 · Region 비교 · 15~16주차 대형 설비 성능 과제가 큰 모델을 전제로 하므로 규모가 큰 모델이 어울린다고 판단했다(추정).
+- 미확인(11주차 실행 전 Inventor 에서 확인 필요): 판재형 2장 이상 겹침 · 볼트 체결 구조 · 구멍 형상(원형/장공 비율) · 구매품 비율 · 실제 리프 부품 수
+- 리스크: 3주차 코멘트("너무 복잡하지 않은 조립품")와 달리 규모가 큼(폴더 기준 .iam 97 · .ipt 312 · 130.5 MB).
+  스크립트의 참조 수 35 는 최상위 파일에 적힌 이름 수로 보이며(추정) 실제 리프 수가 아니다.
+  6주차 빌드에는 비교 상한이 없어 이번 주에는 실행하지 않는다.
+- 영향 파일: 없음 (실행은 11주차)
+- 비고: 샘플은 사용자 PC 다운로드 폴더에 있음 · git 에 올리지 않음.
+  팀원과 공유하려면 폴더 전체를 통째로 전달(.ipj 와 상대 경로 유지). 2022 → 2027 열 때 변환 안내가 뜰 수 있으며 저장하지 않는다.
