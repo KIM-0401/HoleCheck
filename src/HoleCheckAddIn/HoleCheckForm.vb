@@ -7,12 +7,6 @@ Option Explicit On
 Public Class HoleCheckForm
     Inherits System.Windows.Forms.Form
 
-    ' 내부 mm → API cm (W04 결정의 역변환)
-    Private Const dblCentimeterToMillimeter As Double = 10.0
-
-    Private Const dblDefaultCandidateRange As Double = 2.0
-    Private Const dblDefaultAlignmentTolerance As Double = 0.1
-
     Private invApplication As Inventor.Application
 
     ' 그리드 줄 번호(0부터) = 이 목록의 인덱스 · 정렬을 막아 순서를 유지한다
@@ -147,7 +141,7 @@ Public Class HoleCheckForm
             Dim colHoleFaces As New System.Collections.Generic.List(Of Inventor.Face)()
             Dim colOuterRingFaces As New System.Collections.Generic.List(Of Inventor.Face)()
             Dim strDiagnosticPath As String = ""
-            colResults = AxisMatching.RunAxisMatching(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance, colHoleFaces, colOuterRingFaces, strDiagnosticPath)
+            colResults = MatchingEngine.RunAxisMatching(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance, colHoleFaces, colOuterRingFaces, strDiagnosticPath)
             FillGrid()
 
             HighlightFaces(colHoleFaces, colOuterRingFaces, strDiagnosticPath)
@@ -279,21 +273,7 @@ Public Class HoleCheckForm
                 Return
             End If
 
-            Dim invView As Inventor.View = invApplication.ActiveView
-            If invView Is Nothing Then
-                System.Windows.Forms.MessageBox.Show("활성 뷰가 없습니다.", "HoleCheck")
-                Return
-            End If
-
-            ' 목표점 mm → cm
-            Dim invTarget As Inventor.Point = invApplication.TransientGeometry.CreatePoint(objResult.dblTargetX / dblCentimeterToMillimeter,
-                                                                                            objResult.dblTargetY / dblCentimeterToMillimeter,
-                                                                                            objResult.dblTargetZ / dblCentimeterToMillimeter)
-
-            Dim invCamera As Inventor.Camera = invView.Camera
-            invCamera.Fit()
-            invCamera.Target = invTarget
-            invCamera.Apply()
+            Zoom.MoveCameraToTarget(invApplication, objResult.dblTargetX, objResult.dblTargetY, objResult.dblTargetZ)
         Catch objException As System.Exception
             System.Windows.Forms.MessageBox.Show(objException.Message & System.Environment.NewLine & System.Environment.NewLine & objException.StackTrace, "HoleCheck · 이동 오류")
         End Try

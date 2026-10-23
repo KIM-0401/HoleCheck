@@ -66,11 +66,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ApiProbe.vb" />
-    <Compile Include="AxisMatching.vb" />
+    <Compile Include="CollectFromPart.vb" />
     <Compile Include="EntryPoints.vb" />
+    <Compile Include="GeometryHelpers.vb" />
+    <Compile Include="Globals.vb" />
     <Compile Include="HoleCheckForm.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="MatchingEngine.vb" />
+    <Compile Include="ResultModel.vb" />
+    <Compile Include="Zoom.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
