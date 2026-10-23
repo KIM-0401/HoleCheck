@@ -186,3 +186,15 @@
 - 대안: 014759 유지
 - 이유: 색 표시 코드 이후의 출력 형식과 같아 줄 단위 diff 가 가능
 - 영향 파일: docs/probe/
+
+## W07 · 매칭 미연결 기간 폼 처리
+- 결정: 7-6 부터 실행 버튼은 RunLoopCollection 만 부른다. 그리드는 열 정의를 남기고 행을 비운다. 결과 목록 · FillGrid · GetResultAt · 더블클릭 핸들러는 AxisMatchResult 대신 MatchPair 형식으로 바꿔 컴파일만 되게 두고(행이 없어 도달하지 않음), 더블클릭의 Zoom 호출은 MatchPair 에 목표점이 없어 뺐다(Zoom.vb 는 유지). 상태 라벨은 "리프 N · 홀 묶음 N · 지름 2개 이상 묶음 N · <Loop txt 파일명>". 색 표시 함수와 하이라이트 필드는 남기되 호출하지 않는다. 공차 입력 2개와 입력 검증은 그대로 둔다
+- 대안: 그리드 · 핸들러 · 색 표시 함수 삭제 · 묶음 목록을 그리드에 표시
+- 이유: W07.md 시작 전 합의(매칭 미연결 기간 그리드는 비우고 상태 라벨에 요약 · 상세는 진단 txt). W08 에서 MatchPair 로, 10주차 색 표시 정리에서 HighlightSet 으로 재연결할 자리를 남김. 공차 입력은 W08 Cap/Tol 로 이어짐
+- 영향 파일: src/HoleCheckAddIn/HoleCheckForm.vb (colResults · OnRunClick · FillGrid · OnGridSelectionChanged · OnGridCellDoubleClick · GetResultAt)
+
+## W07 · 피처 추적 함수 보관 위치
+- 결정: FindHoleAncestor · GetParentFeatures · intMaxFeatureDepth 는 CollectFromPart.vb 에 그대로 두고 "W06 피처 추적 · W07 수집에서는 호출하지 않음 · W08 HoleFeature 연계에서 재사용" 주석을 붙인다. 이 둘만 쓰던 피처 상태 상수 4개 · ClassifyFaceFeature · SelectHoleAxes 는 축 경로와 함께 제거
+- 대안: 별도 파일(FeatureTrace.vb 등)로 분리 · 삭제 후 W08 에서 git 이력에서 복원
+- 이유: W07.md A 항목 "W06 피처 추적은 수집에서 빼고 보관 (W08 재사용)". 수집과 같은 파일에 두면 W08 에서 묶음과 HoleFeature 를 연결할 때 위치를 찾기 쉽고, 이번 주 파일 분리 단위(W07 decisions "파일 분리 단위와 배치")를 바꾸지 않음
+- 영향 파일: src/HoleCheckAddIn/CollectFromPart.vb

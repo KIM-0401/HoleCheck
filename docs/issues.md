@@ -226,3 +226,9 @@
 - 원인: 014759 는 색 표시 코드(df6861e) 이전 실행. 분리 전 마지막 실행은 024033
 - 처리: 기준을 024033 으로 바꿔 diff 없음 확인 후 진행
 - 왜 예측 못 했나: 회귀 기준을 고를 때 기준 txt 가 마지막 코드 변경 이후 실행인지 확인하지 않았다
+
+## W07 · Git Bash sed -i 가 .vb 파일의 CRLF 를 LF 로 바꿈
+- 증상: 7-6 에서 ResultModel.vb · CollectFromPart.vb · MatchingEngine.vb 의 줄을 sed -i 로 지운 뒤 CR 수가 줄 수와 맞지 않음 (ResultModel.vb 78줄 중 CR 1개)
+- 원인: Git Bash(msys) sed 가 줄을 읽을 때 CR 을 떼고 LF 로만 다시 씀
+- 처리: 편집을 마친 뒤 수정한 .vb 6개를 sed 's/\r$//; s/$/\r/' 로 CRLF 로 다시 맞추고 줄 수 = CR 수 확인. 기존 파일(ApiProbe · EntryPoints · Zoom)은 손대지 않음
+- 왜 예측 못 했나: 7-2 에서는 새 파일을 만든 뒤 CRLF 변환을 따로 했고, 기존 CRLF 파일을 sed -i 로 직접 지운 적이 없어 msys sed 의 줄 끝 처리를 확인하지 않았다

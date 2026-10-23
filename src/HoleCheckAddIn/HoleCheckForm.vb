@@ -4,13 +4,15 @@ Option Explicit On
 ' 디자이너 파일 없이 코드로 만든 폼 · W05 원통면 축 기반 1차 매칭 결과 표시
 ' 입력 2개(후보 범위 · 정렬 공차) → RunAxisMatching → 4열 그리드 · 더블클릭 시 Camera.Fit 후 목표점으로 이동
 ' W06 · 실행 후 HighlightSet 색 표시 (홀 면 초록 · 바깥 링 주황)
+' W07 · 실행 버튼은 EdgeLoop 수집(RunLoopCollection)만 · 그리드는 비우고 상태 라벨에 요약 · 상세는 Loop 진단 txt
 Public Class HoleCheckForm
     Inherits System.Windows.Forms.Form
 
     Private invApplication As Inventor.Application
 
     ' 그리드 줄 번호(0부터) = 이 목록의 인덱스 · 정렬을 막아 순서를 유지한다
-    Private colResults As New System.Collections.Generic.List(Of AxisMatchResult)()
+    ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결 (지금은 항상 비어 있다)
+    Private colResults As New System.Collections.Generic.List(Of MatchPair)()
 
     Private objCandidateRangeInput As System.Windows.Forms.NumericUpDown
     Private objAlignmentToleranceInput As System.Windows.Forms.NumericUpDown
@@ -19,6 +21,7 @@ Public Class HoleCheckForm
     Private objResultGrid As System.Windows.Forms.DataGridView
     Private objSelectionLabel As System.Windows.Forms.Label
 
+    ' W07 · 매칭 미연결 기간 미사용 · 10주차 색 표시 정리에서 재연결
     ' W06 · 하이라이트 세트 수명 확인용 진단 · 함수가 끝나도 참조를 유지한다
     ' 실행할 때마다 새 세트로 덮어쓰기만 하고 이전 세트는 정리하지 않는다 (누적 · 문서 전환 처리는 10주차)
     Private invHoleSet As Inventor.HighlightSet
@@ -138,23 +141,32 @@ Public Class HoleCheckForm
                 Return
             End If
 
-            Dim colHoleFaces As New System.Collections.Generic.List(Of Inventor.Face)()
-            Dim colOuterRingFaces As New System.Collections.Generic.List(Of Inventor.Face)()
-            Dim strDiagnosticPath As String = ""
-            colResults = MatchingEngine.RunAxisMatching(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance, colHoleFaces, colOuterRingFaces, strDiagnosticPath)
+            ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결 · 그리드는 비운다 (열 정의는 유지)
+            colResults = New System.Collections.Generic.List(Of MatchPair)()
             FillGrid()
 
-            HighlightFaces(colHoleFaces, colOuterRingFaces, strDiagnosticPath)
-
-            ' W07 7-5 · EdgeLoop 수집을 축 경로 뒤에 한 번 더 실행 · 실패해도 위의 그리드 · 색 표시는 이미 끝났다
+            ' W07 7-6 · EdgeLoop 수집만 실행 · 색 표시(HighlightFaces)는 호출하지 않는다
             Dim strLoopDiagnosticPath As String = ""
             Dim colHoleClusters As System.Collections.Generic.List(Of HoleCluster) = MatchingEngine.RunLoopCollection(invAssemblyDocument, strLoopDiagnosticPath)
-            objStatusLabel.Text = objStatusLabel.Text & " · 홀 묶음 " & colHoleClusters.Count.ToString() & " · Loop txt 저장됨"
+
+            ' 리프 수는 수집과 같은 순회(AllLeafOccurrences)의 개수 · 묶음이 없는 리프도 센다
+            Dim intLeafCount As Integer = invAssemblyDocument.ComponentDefinition.Occurrences.AllLeafOccurrences().Count
+            Dim intMultiDiameterClusterCount As Integer = 0
+            For Each objCluster As HoleCluster In colHoleClusters
+                If objCluster.colDiameters.Count >= 2 Then
+                    intMultiDiameterClusterCount += 1
+                End If
+            Next
+            objStatusLabel.Text = "리프 " & intLeafCount.ToString() &
+                                  " · 홀 묶음 " & colHoleClusters.Count.ToString() &
+                                  " · 지름 2개 이상 묶음 " & intMultiDiameterClusterCount.ToString() &
+                                  " · " & System.IO.Path.GetFileName(strLoopDiagnosticPath)
         Catch objException As System.Exception
             System.Windows.Forms.MessageBox.Show(objException.Message & System.Environment.NewLine & System.Environment.NewLine & objException.StackTrace, "HoleCheck · 실행 오류")
         End Try
     End Sub
 
+    ' W07 · 매칭 미연결 기간 미사용 · 10주차 색 표시 정리에서 재연결 (HighlightFaces · AddFacesToHighlightSet · ReadHighlightSetCount · ReadFirstItemTypeName)
     ' W06 · 색 표시 · 홀 면 초록 · 바깥 링 주황 · 실행할 때마다 활성 문서에 HighlightSet 2개를 새로 만든다
     ' 세트는 폼 필드에 덮어써 보관하고, 이전 세트는 지우지 않는다 (누적 정리는 W06 범위 밖) · 모델은 바꾸지 않는다
     ' 결과 "색 표시 · 성공 N · 실패 N" 과 세트 진단 2줄은 진단 txt 맨 아래(카운터 끝)에 덧붙인다
@@ -236,33 +248,14 @@ Public Class HoleCheckForm
         Next
     End Sub
 
-    ' OK 줄도 전부 표시
+    ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결 · 지금은 행을 비우기만 한다 (상태 라벨은 OnRunClick 이 쓴다)
     Private Sub FillGrid()
         objResultGrid.Rows.Clear()
         objSelectionLabel.Text = ""
-
-        Dim intOkCount As Integer = 0
-        Dim intPositionMismatchCount As Integer = 0
-
-        For intIndex As Integer = 0 To colResults.Count - 1
-            Dim objResult As AxisMatchResult = colResults(intIndex)
-            objResultGrid.Rows.Add((intIndex + 1).ToString(),
-                                objResult.strErrorKind,
-                                FormatMillimeter(objResult.dblAxisDistance),
-                                FormatMillimeter(objResult.dblDiameterA) & " / " & FormatMillimeter(objResult.dblDiameterB))
-
-            If objResult.strErrorKind = AxisMatchResult.strErrorKindOk Then
-                intOkCount += 1
-            ElseIf objResult.strErrorKind = AxisMatchResult.strErrorKindPositionMismatch Then
-                intPositionMismatchCount += 1
-            End If
-        Next
-
-        objStatusLabel.Text = "전체 " & colResults.Count.ToString() & "줄 · OK " & intOkCount.ToString() & " · 위치 불일치 " & intPositionMismatchCount.ToString()
     End Sub
 
     Private Sub OnGridSelectionChanged(ByVal objSender As Object, ByVal objArgs As System.EventArgs)
-        Dim objResult As AxisMatchResult = GetResultAt(If(objResultGrid.CurrentRow Is Nothing, -1, objResultGrid.CurrentRow.Index))
+        Dim objResult As MatchPair = GetResultAt(If(objResultGrid.CurrentRow Is Nothing, -1, objResultGrid.CurrentRow.Index))
         If objResult Is Nothing Then
             objSelectionLabel.Text = ""
             Return
@@ -271,20 +264,20 @@ Public Class HoleCheckForm
     End Sub
 
     ' 더블클릭 · 계획서 5주차대로 Camera.Fit 후 목표점 지정 · Eye는 계산하지 않는다
+    ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결 · 행이 없어 도달하지 않음 · MatchPair 에 목표점이 없어 Zoom 호출을 뺐다 (Zoom.vb 는 유지)
     Private Sub OnGridCellDoubleClick(ByVal objSender As Object, ByVal objArgs As System.Windows.Forms.DataGridViewCellEventArgs)
         Try
-            Dim objResult As AxisMatchResult = GetResultAt(objArgs.RowIndex)
+            Dim objResult As MatchPair = GetResultAt(objArgs.RowIndex)
             If objResult Is Nothing Then
                 Return
             End If
-
-            Zoom.MoveCameraToTarget(invApplication, objResult.dblTargetX, objResult.dblTargetY, objResult.dblTargetZ)
         Catch objException As System.Exception
             System.Windows.Forms.MessageBox.Show(objException.Message & System.Environment.NewLine & System.Environment.NewLine & objException.StackTrace, "HoleCheck · 이동 오류")
         End Try
     End Sub
 
-    Private Function GetResultAt(ByVal intRowIndex As Integer) As AxisMatchResult
+    ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결
+    Private Function GetResultAt(ByVal intRowIndex As Integer) As MatchPair
         If intRowIndex < 0 OrElse intRowIndex >= colResults.Count Then
             Return Nothing
         End If
