@@ -17,4 +17,7 @@ Friend Module Globals
     Friend Const dblDefaultCandidateRange As Double = 2.0
     Friend Const dblDefaultAlignmentTolerance As Double = 0.1
 
+    ' W07 · 같은 리프 안 동심 묶음 기준 (mm)
+    Friend Const dblConcentricClusterThreshold As Double = 0.01
+
 End Module
