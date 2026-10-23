@@ -246,7 +246,7 @@
 - 왜 예측 못 했나: 예측했다. W07.md 범위 밖에 명시
 
 ## W07 · (해결 확인) 스냅샷 zip에 bin · obj · .vs 가 포함됨
-- 증상: W05 · W06 스냅샷 zip 안에 src\HoleCheckAddInin · obj · .vs 가 들어 있었음 (issues "W05 · 스냅샷 zip에 bin · obj · .vs 가 포함됨")
+- 증상: W05 · W06 스냅샷 zip 안에 src\HoleCheckAddIn\bin · obj · .vs 가 들어 있었음 (issues "W05 · 스냅샷 zip에 bin · obj · .vs 가 포함됨")
 - 원인: snapshot.ps1 의 Copy-Item -Recurse -Exclude bin,obj,.vs 는 src 바로 아래 항목에만 적용되어 src\HoleCheckAddIn\ 아래의 bin · obj · .vs 가 그대로 복사됨
 - 처리: src 복사를 Get-ChildItem -Recurse -File 로 바꾸고 상대 경로에 bin · obj · .vs 폴더가 들어간 파일은 건너뜀 (docs 복사 · zip 이름 규칙 W<주>_<상태>.zip · 인자 -Week -State 는 그대로). 처음 수정(복사 후 삭제)은 VS 가 열어 둔 .vs\…\FileContentIndex\*.vsidx 잠금으로 Copy-Item 오류 5건이 나서 복사 단계에서 거르도록 다시 고침. W07_수집전환완료_매칭미연결.zip 확인: 항목 47개 (src 20 · docs 27) · bin/ · obj/ · .vs/ 항목 0 · 최상위 폴더 docs · src · 199 KB · 오류 없음
 - 왜 예측 못 했나: W05 에서 스크립트를 쓸 때 -Exclude 의 적용 범위를 확인하지 않았고, 수정할 때도 처음에는 VS 실행 중 .vs 파일이 잠겨 있을 수 있다는 점을 고려하지 않았다
