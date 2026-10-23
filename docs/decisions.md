@@ -198,3 +198,15 @@
 - 대안: 별도 파일(FeatureTrace.vb 등)로 분리 · 삭제 후 W08 에서 git 이력에서 복원
 - 이유: W07.md A 항목 "W06 피처 추적은 수집에서 빼고 보관 (W08 재사용)". 수집과 같은 파일에 두면 W08 에서 묶음과 HoleFeature 를 연결할 때 위치를 찾기 쉽고, 이번 주 파일 분리 단위(W07 decisions "파일 분리 단위와 배치")를 바꾸지 않음
 - 영향 파일: src/HoleCheckAddIn/CollectFromPart.vb
+
+## W07 · EdgeLoop 루프 판정과 Loop 진단 출력 규칙
+- 결정: 안쪽 루프의 모든 edge 가 kCircleCurve 일 때만 채택하고, 원 정보는 첫 edge 의 Geometry 를 Inventor.Circle 로 읽는다. 원호와 다른 곡선이 함께 있으면 "원호 포함"으로 하나만 센다. HoleCluster.AddDiameter 는 지름을 오름차순으로 넣고 intCircleCount 를 같이 늘린다(같은 지름도 버리지 않음). 묶음 번호는 리프 안에서 0부터. Loop 진단 txt 는 Feature 진단과 같은 폴더 · 인코딩 · 이름 규칙(접두 Loop)이며 저장 알림 메시지박스는 띄우지 않고 폼 상태 라벨에 파일명을 적는다
+- 대안: 루프의 모든 edge 원을 비교해 중심이 같은지 확인 · 탈락 사유 복수 집계 · 메시지박스 표시
+- 이유: 7-5 실측에서 edge 2개 이상 채택 루프 0 · 지름 2개 이상 묶음 0 이라 첫 edge 로 충분했다. 수집만 하는 주간이라 판정에 쓰이지 않는 집계는 단순하게 둠. 실행마다 메시지박스가 둘 뜨지 않게 함
+- 영향 파일: src/HoleCheckAddIn/CollectFromPart.vb (CollectHoleClusters · ReadCircleLoop · AddToCluster) · ResultModel.vb (HoleCluster.AddDiameter) · MatchingEngine.vb (WriteLoopDiagnostics)
+
+## W07 · 리프 쌍별 최근접 묶음 거리는 진단 txt 에만 · 판정 없음
+- 결정: 서로 다른 리프 쌍마다 묶음 중심 사이 3D 거리 최솟값 · 두 묶음 번호 · 지름 리스트를 거리 오름차순(같으면 리프 번호 순)으로 전부 쓴다. 필터 · 판정 · MatchPair 사용 없음. 묶음이 없는 리프가 낀 쌍은 줄 없이 개수만 적는다. 리프별 탈락 수는 수집 로직을 바꾸지 않고 리프 시작 전 카운터와의 차이로 기록한다
+- 대안: 후보 범위로 걸러 짝 후보만 출력 · MatchPair 로 그리드 표시
+- 이유: W07 은 매칭 · 판정을 연결하지 않는 주간(W07.md 목표). 전체 출력이라 W06 쌍별 비교 18쌍과 대조할 수 있었음(3 mm 미만 18줄 = W06 18쌍)
+- 영향 파일: src/HoleCheckAddIn/MatchingEngine.vb (WriteLeafPairNearest · CompareLeafPairNearest · FormatDiameterList) · CollectFromPart.vb (CollectHoleClusters)

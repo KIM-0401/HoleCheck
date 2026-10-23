@@ -250,3 +250,9 @@
 - 원인: snapshot.ps1 의 Copy-Item -Recurse -Exclude bin,obj,.vs 는 src 바로 아래 항목에만 적용되어 src\HoleCheckAddIn\ 아래의 bin · obj · .vs 가 그대로 복사됨
 - 처리: src 복사를 Get-ChildItem -Recurse -File 로 바꾸고 상대 경로에 bin · obj · .vs 폴더가 들어간 파일은 건너뜀 (docs 복사 · zip 이름 규칙 W<주>_<상태>.zip · 인자 -Week -State 는 그대로). 처음 수정(복사 후 삭제)은 VS 가 열어 둔 .vs\…\FileContentIndex\*.vsidx 잠금으로 Copy-Item 오류 5건이 나서 복사 단계에서 거르도록 다시 고침. W07_수집전환완료_매칭미연결.zip 확인: 항목 47개 (src 20 · docs 27) · bin/ · obj/ · .vs/ 항목 0 · 최상위 폴더 docs · src · 199 KB · 오류 없음
 - 왜 예측 못 했나: W05 에서 스크립트를 쓸 때 -Exclude 의 적용 범위를 확인하지 않았고, 수정할 때도 처음에는 VS 실행 중 .vs 파일이 잠겨 있을 수 있다는 점을 고려하지 않았다
+
+## W07 · printf 로 기록한 문서 줄에 CR · 백스페이스 제어 문자가 들어감
+- 증상: 7-6 에서 issues.md 처리 줄의 sed 식 \r 표기가 실제 CR 문자가 됨(CR 236 / 줄 234). 마감 점검에서 issues.md 249줄 "src\HoleCheckAddIn\bin" 이 "src\HoleCheckAddInin" 으로 보임(0x08 백스페이스)
+- 원인: Git Bash printf 형식 문자열이 \r · \b 같은 역슬래시 이스케이프를 제어 문자로 해석함. 첫 정정 시도에서도 perl 치환 문자열 \b 가 셸 · perl 을 거치며 다시 \b 로 해석되어 바뀌지 않음
+- 처리: 두 곳 모두 perl 로 그 줄만 고침(두 번째는 chr(92) 로 역슬래시 생성). docs 아래 .md 전체에서 제어 문자 · 잘못된 UTF-8 0건 확인. 이후 문서 append 는 heredoc + 줄 끝 변환으로 함
+- 왜 예측 못 했나: CRLF 를 맞추려고 printf 로 \r\n 을 직접 쓰면서, 본문에 든 역슬래시도 같은 규칙으로 해석된다는 점을 따지지 않았다. 쓴 뒤 제어 문자 검사를 하지 않아 다음 단계에서 발견됨
