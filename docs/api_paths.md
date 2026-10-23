@@ -12,10 +12,16 @@
 | 8 | 원통 축 | Cylinder.BasePoint | Inventor.Point | 단위·좌표계는 실측 대기 |
 | 8 | 원통 축 | Cylinder.AxisVector | Inventor.UnitVector | |
 | 8 | 원통 축 | Cylinder.Radius | Double | |
-| 9 | 면 테두리 | Face.EdgeLoops / Face.Edges | EdgeLoops / Edges | EdgeLoop 멤버 확인 대기 |
+| 9 | 면 테두리 | Face.EdgeLoops / Face.Edges | Inventor.EdgeLoops / Inventor.Edges (get only) | EdgeLoops 는 IEnumerable · Item(Int32) As EdgeLoop · For Each 가능 (W07 · Interop 리플렉션으로 확인 · 실행 미검증) |
+| 9 | 면 테두리 | EdgeLoop.IsOuterEdgeLoop | Boolean (get only) | 안쪽 루프 = False (W07 · Interop 리플렉션으로 확인 · 실행 미검증) |
+| 9 | 면 테두리 | EdgeLoop.Edges | Inventor.Edges (get only) | Edges 는 IEnumerable · Item(Int32) As Edge · For Each 가능 (W07 · Interop 리플렉션으로 확인 · 실행 미검증) |
 | 추가 | 면 | Face.CreatedByFeature / Face.ThreadInfos | PartFeature / ObjectCollection | 6주차 이후 재료 |
-| 10 | 엣지 종류 | | | |
-| 11 | 원 정보 | | | |
+| 10 | 엣지 종류 | Edge.GeometryType | Inventor.CurveTypeEnum (get only) | kCircleCurve = 5124 · kCircularArcCurve = 5125 둘 다 있음 (W07 · Interop 리플렉션으로 확인 · 실행 미검증) |
+| 10 | 엣지 종류 | Edge.Geometry | Object (get only) | Inventor.Circle 로 CType 필요 (W07 · Interop 리플렉션으로 확인 · 실행 미검증) |
+| 11 | 원 정보 | Circle.Center | Inventor.Point (get/set) | cm · 조립품 좌표(프록시 · W04 결정) (W07 · Interop 리플렉션으로 확인 · 실행 미검증) |
+| 11 | 원 정보 | Circle.Radius | Double (get/set) | cm (W07 · Interop 리플렉션으로 확인 · 실행 미검증) |
+| 11 | 원 정보 | Circle.Normal | Inventor.UnitVector (get/set) | (W07 · Interop 리플렉션으로 확인 · 실행 미검증) |
+| 추가 | 면 종류 | SurfaceTypeEnum.kPlaneSurface | SurfaceTypeEnum (값 5890) | 7행 "kPlaneSurface 대기" 확인 · kCylinderSurface = 5891 (W07 · Interop 리플렉션으로 확인 · 실행 미검증) |
 | 12 | 부품 정의 | ComponentOccurrence.Definition | ComponentDefinition | PartComponentDefinition 변환 필요 |
 | 13 | 구멍 피처 | PartFeatures.HoleFeatures | HoleFeatures | |
 | 14 | 탭 | HoleFeature.Tapped | Boolean | |
