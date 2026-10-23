@@ -168,3 +168,15 @@
 - 대안: W06 피처 기반 필터 유지 · 이번 주에 압출컷을 피처 외 방법으로 추가 수집
 - 이유: M7 압출컷은 HoleFeature 조상이 없어 W05 OK 2줄 → W06 0줄로 짝이 사라짐. 바깥 링 제외 24면의 지름(10 mm 11개 · 11 mm 6개 · 15 mm 6개 · 8 mm 1개)이 결과에 남지 않음. 색 표시로 홀 면 293 · 바깥 링 24를 화면에서 확인할 수 있었음. 압출컷 잡기 · 바깥 링 지름 보존 · EdgeLoop 수집 · 파일 분리는 W06.md 범위 밖
 - 영향 파일: 없음 (이번 주 코드 변경 없음 · 7주차 이후)
+
+## W07 · 파일 분리 단위와 배치
+- 결정: 파일 분리 단위는 A = CollectFromPart · MatchingEngine · ResultModel · GeometryHelpers / B = Globals · HoleCheckForm · EntryPoints · Zoom. ApiProbe.vb 는 그대로 둔다(15주차 제거 예정). EntryPoints.vb(StandardAddInServer) 는 이미 분리돼 있어 이번 주 변경 없음. My Project 아래 파일도 건드리지 않음
+- 대안: 한 파일 유지 · ApiProbe 까지 포함해 재배치
+- 이유: issues "W06 · 코드가 한 파일(AxisMatching.vb)에 몰려 오류 위치 특정이 어려움"
+- 영향 파일: src 전체
+
+## W07 · 좌표는 변환을 곱하지 않고 cm→mm 만 · 계획서 문구와 다름
+- 결정: 프록시 Geometry 는 이미 조립품 좌표 (W04 결정). Transformation 을 곱하지 않고 cm→mm 만 한다. 계획서 v4 의 "파트→조립품 변환" 문구와 다르며 nested_top 으로 검증한다
+- 대안: 계획서대로 Transformation 곱하기
+- 이유: W04 결정 실측 108건(nested_top 이동+회전 · 부품 좌표 0건) · 프록시에 변환을 다시 곱하면 이중 적용 위험
+- 영향 파일: CollectFromPart.vb
