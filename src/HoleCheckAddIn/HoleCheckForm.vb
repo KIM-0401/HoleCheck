@@ -145,6 +145,11 @@ Public Class HoleCheckForm
             FillGrid()
 
             HighlightFaces(colHoleFaces, colOuterRingFaces, strDiagnosticPath)
+
+            ' W07 7-5 · EdgeLoop 수집을 축 경로 뒤에 한 번 더 실행 · 실패해도 위의 그리드 · 색 표시는 이미 끝났다
+            Dim strLoopDiagnosticPath As String = ""
+            Dim colHoleClusters As System.Collections.Generic.List(Of HoleCluster) = MatchingEngine.RunLoopCollection(invAssemblyDocument, strLoopDiagnosticPath)
+            objStatusLabel.Text = objStatusLabel.Text & " · 홀 묶음 " & colHoleClusters.Count.ToString() & " · Loop txt 저장됨"
         Catch objException As System.Exception
             System.Windows.Forms.MessageBox.Show(objException.Message & System.Environment.NewLine & System.Environment.NewLine & objException.StackTrace, "HoleCheck · 실행 오류")
         End Try

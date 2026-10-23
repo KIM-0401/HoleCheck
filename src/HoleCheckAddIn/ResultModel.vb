@@ -115,3 +115,27 @@ Public Class MatchPair
     Public Property strJudgement As String = ""
 
 End Class
+
+' W07 7-5 · EdgeLoop 수집 리프 하나의 요약 · 진단 출력용 (기존 LeafSummary 와 별도)
+Friend Class LoopLeafSummary
+    Public strOccurrenceName As String
+    Public strDefinitionName As String
+    Public intAcceptedCircleCount As Integer
+    Public intClusterCount As Integer
+    Public intMultiDiameterClusterCount As Integer
+    Public strLeafError As String = ""
+End Class
+
+' W07 7-5 · EdgeLoop 수집 카운터 · 진단 출력용 (기존 MatchCounters 와 별도)
+Friend Class LoopCounters
+    Public intLeafCount As Integer
+    Public intPlaneFaceCount As Integer
+    Public intInnerLoopCount As Integer
+    Public intAcceptedLoopCount As Integer
+    Public intRejectedArcCount As Integer
+    Public intRejectedOtherCurveCount As Integer
+    Public intReadFailedCount As Integer
+    Public intMultiEdgeAcceptedLoopCount As Integer
+    Public intClusterCount As Integer
+    Public intMultiDiameterClusterCount As Integer
+End Class

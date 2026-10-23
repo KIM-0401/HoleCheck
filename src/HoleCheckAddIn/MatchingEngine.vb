@@ -265,4 +265,93 @@ Public Module MatchingEngine
         objText.AppendLine()
     End Sub
 
+    ' W07 7-5 · EdgeLoop 수집 실행 · 축 경로(RunAxisMatching) 옆에 둔다 · 쌍별 거리는 아직 계산하지 않는다 (7-6)
+    ' strDiagnosticPath · 저장한 Loop 진단 txt 경로
+    Public Function RunLoopCollection(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByRef strDiagnosticPath As String) As System.Collections.Generic.List(Of HoleCluster)
+        Dim objCounters As New LoopCounters()
+        Dim colLeafSummaries As New System.Collections.Generic.List(Of LoopLeafSummary)()
+
+        Dim colClusters As System.Collections.Generic.List(Of HoleCluster) = CollectHoleClusters(invAssemblyDocument, colLeafSummaries, objCounters)
+
+        strDiagnosticPath = WriteLoopDiagnostics(invAssemblyDocument, colLeafSummaries, colClusters, objCounters)
+
+        Return colClusters
+    End Function
+
+    ' W07 7-5 · Loop 진단 txt · Feature 진단과 같은 폴더(바탕화면) · 같은 인코딩(BOM 포함 UTF-8) · 같은 이름 규칙(접두만 Loop)
+    ' 저장 알림 메시지박스는 띄우지 않는다 · 폼 상태 라벨에 표시
+    Private Function WriteLoopDiagnostics(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByVal colLeafSummaries As System.Collections.Generic.List(Of LoopLeafSummary), ByVal colClusters As System.Collections.Generic.List(Of HoleCluster), ByVal objCounters As LoopCounters) As String
+        Dim objText As New System.Text.StringBuilder()
+        objText.AppendLine("단위 mm (API cm ×10) · 좌표는 조립품 좌표 · Transformation 은 곱하지 않음")
+        objText.AppendLine("문서: " & invAssemblyDocument.FullFileName)
+        objText.AppendLine("시각: " & System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"))
+        objText.AppendLine("수집: 평면 face · 안쪽 EdgeLoop · 모든 edge 가 kCircleCurve · 동심 묶음 기준 " & FormatDouble(dblConcentricClusterThreshold) & " mm (같은 리프 안 · 묶음 중심은 첫 원 중심)")
+        objText.AppendLine()
+
+        objText.AppendLine("==== 카운터 ====")
+        objText.AppendLine("리프 수: " & objCounters.intLeafCount.ToString())
+        objText.AppendLine("평면 face 수: " & objCounters.intPlaneFaceCount.ToString())
+        objText.AppendLine("안쪽 루프 수: " & objCounters.intInnerLoopCount.ToString())
+        objText.AppendLine("채택 루프 수: " & objCounters.intAcceptedLoopCount.ToString())
+        objText.AppendLine("탈락 · 원호 포함: " & objCounters.intRejectedArcCount.ToString())
+        objText.AppendLine("탈락 · 기타 곡선 포함: " & objCounters.intRejectedOtherCurveCount.ToString())
+        objText.AppendLine("탈락 · 읽기 실패: " & objCounters.intReadFailedCount.ToString())
+        objText.AppendLine("edge 2개 이상 채택 루프 수: " & objCounters.intMultiEdgeAcceptedLoopCount.ToString())
+        objText.AppendLine("묶음 수: " & objCounters.intClusterCount.ToString())
+        objText.AppendLine("지름 2개 이상 묶음 수: " & objCounters.intMultiDiameterClusterCount.ToString())
+        objText.AppendLine()
+
+        objText.AppendLine("==== 리프별 ====")
+        objText.AppendLine(JoinTab("번호", "occurrence", "부품 정의", "채택 원", "묶음", "지름 2개 이상 묶음", "리프 오류"))
+        For intIndex As Integer = 0 To colLeafSummaries.Count - 1
+            Dim objSummary As LoopLeafSummary = colLeafSummaries(intIndex)
+            objText.AppendLine(JoinTab(intIndex.ToString(),
+                                       objSummary.strOccurrenceName,
+                                       objSummary.strDefinitionName,
+                                       objSummary.intAcceptedCircleCount.ToString(),
+                                       objSummary.intClusterCount.ToString(),
+                                       objSummary.intMultiDiameterClusterCount.ToString(),
+                                       objSummary.strLeafError))
+        Next
+        objText.AppendLine()
+
+        objText.AppendLine("==== 묶음 목록 (" & colClusters.Count.ToString() & "개) ====")
+        objText.AppendLine(JoinTab("리프 번호", "occurrence", "묶음 번호", "중심X", "중심Y", "중심Z", "지름 (오름차순)"))
+        Dim intPreviousLeafIndex As Integer = -1
+        Dim intClusterNumber As Integer = 0
+        For Each objCluster As HoleCluster In colClusters
+            ' 묶음 번호는 리프 안에서 0부터 · colClusters 는 리프 순서대로 이어 붙어 있다
+            If objCluster.intLeafIndex <> intPreviousLeafIndex Then
+                intPreviousLeafIndex = objCluster.intLeafIndex
+                intClusterNumber = 0
+            End If
+
+            Dim colDiameterTexts As New System.Collections.Generic.List(Of String)()
+            For Each dblDiameter As Double In objCluster.colDiameters
+                colDiameterTexts.Add(FormatDouble(dblDiameter))
+            Next
+
+            objText.AppendLine(JoinTab(objCluster.intLeafIndex.ToString(),
+                                       objCluster.strOccurrenceName,
+                                       intClusterNumber.ToString(),
+                                       FormatDouble(objCluster.dblCenterX),
+                                       FormatDouble(objCluster.dblCenterY),
+                                       FormatDouble(objCluster.dblCenterZ),
+                                       String.Join(" / ", colDiameterTexts)))
+            intClusterNumber += 1
+        Next
+
+        Dim strDocumentName As String = System.IO.Path.GetFileNameWithoutExtension(invAssemblyDocument.DisplayName)
+        For Each chrInvalid As Char In System.IO.Path.GetInvalidFileNameChars()
+            strDocumentName = strDocumentName.Replace(chrInvalid, "_"c)
+        Next
+        Dim strFileName As String = "HoleCheck_Loop_" & strDocumentName & "_" & System.DateTime.Now.ToString("yyyyMMdd_HHmmss") & ".txt"
+        Dim strPath As String = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory), strFileName)
+
+        ' BOM 포함 UTF-8 · 메모장·PowerShell에서 한글이 깨지지 않게
+        System.IO.File.WriteAllText(strPath, objText.ToString(), New System.Text.UTF8Encoding(True))
+
+        Return strPath
+    End Function
+
 End Module
