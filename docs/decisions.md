@@ -222,3 +222,9 @@
 - 대안: 묶음마다 HoleFeatures 를 다시 순회 · 2차 결과를 1차 성공 묶음에도 덮어씀 · 1차 Type 이름을 HoleCluster 필드로 추가
 - 이유: COM 호출을 리프당 한 번으로 줄이고 COM 객체를 함수 밖에 두지 않음(W05 결정 · W08 시작 전 합의). 연계 필드 5개 외의 진단 값은 모델에 넣지 않음(W08 decisions "연계 1차 카운터 의미와 경로 기록 방식")
 - 영향 파일: src/HoleCheckAddIn/CollectFromPart.vb (CollectHoleClusters · LinkHoleFeatureBySideWall · ReadHoleTap · LinkHoleFeatureByCenter · ReadHoleCenterCandidates · ReadCenterPoint · FindNearestCandidate · HoleCenterCandidate) · Globals.vb (dblLinkCenterToleranceMillimeter) · ResultModel.vb (LoopCounters) · MatchingEngine.vb (WriteLinkSection · WriteLinkStage2Section · WriteCountDictionary)
+
+## W08 · 그리디 배타 매칭의 동률 순서 · 후보 수 전달 · 진단 형식
+- 결정: 정렬 키는 거리 하나이고, 같은 거리는 후보 생성 순서(리프 A · 리프 B · 묶음 A · 묶음 B 이중 루프 순)로 둔다. Cap 비교는 거리 ≤ dblCap 그대로(경계 보정 없음). 사용 집합은 A쪽 · B쪽 HashSet 두 개 · 키 "리프 번호:리프 안 묶음 번호". 후보 수는 Private RunMatchingWithCount 의 ByRef 로 받고, Public RunMatching(colClusters, dblCap, dblTol) 은 그 래퍼. 진단 매칭 섹션은 요약 4줄 · 리프 쌍별 확정/OK/NG(리프 번호 순) · 확정 줄 목록(거리 오름차순 · 거리와 중점 R 형식 · 연계 A/B · 탭 A/B)
+- 대안: List.Sort 를 그대로 씀(불안정 정렬이라 동률 순서가 입력 순서와 무관) · LINQ OrderBy(기본 Imports 꺼짐 · System.Core 참조 의존) · 후보 수를 진단에서 다시 셈
+- 이유: 동률 3키 정렬은 14주차라 키를 늘리지 않되, 실행마다 같은 결과가 나오게 생성 순서로만 묶음. 지시된 RunMatching 시그니처를 지키면서 진단에 후보 수를 쓰려고 래퍼로 나눔
+- 영향 파일: src/HoleCheckAddIn/MatchingEngine.vb (RunLoopCollection · RunMatching · RunMatchingWithCount · CompareMatchCandidate · CreateMatchPair · FormatLinkStage · FormatTap · WriteLoopDiagnostics · WriteMatchingSection · CompareLeafPairKey · MatchCandidate) · HoleCheckForm.vb (OnRunClick)

@@ -147,7 +147,9 @@ Public Class HoleCheckForm
 
             ' W07 7-6 · EdgeLoop 수집만 실행 · 색 표시(HighlightFaces)는 호출하지 않는다
             Dim strLoopDiagnosticPath As String = ""
-            Dim colHoleClusters As System.Collections.Generic.List(Of HoleCluster) = MatchingEngine.RunLoopCollection(invAssemblyDocument, strLoopDiagnosticPath)
+            ' W08 8-5 · 공차 입력 2개를 Cap(후보 범위) · Tol(정렬 공차)로 넘긴다 · 매칭 결과 표시는 8-6
+            Dim colMatchPairs As System.Collections.Generic.List(Of MatchPair) = Nothing
+            Dim colHoleClusters As System.Collections.Generic.List(Of HoleCluster) = MatchingEngine.RunLoopCollection(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance, strLoopDiagnosticPath, colMatchPairs)
 
             ' 리프 수는 수집과 같은 순회(AllLeafOccurrences)의 개수 · 묶음이 없는 리프도 센다
             Dim intLeafCount As Integer = invAssemblyDocument.ComponentDefinition.Occurrences.AllLeafOccurrences().Count

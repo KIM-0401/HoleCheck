@@ -1,0 +1,100 @@
+﻿단위 mm (API cm ×10) · 좌표는 조립품 좌표 · Transformation 은 곱하지 않음
+문서: C:\capstone\HoleCheck\models\cases\M7_압출컷\M7.iam
+시각: 2026-10-28 16:42:08
+수집: 평면 face · 안쪽 EdgeLoop · 모든 edge 가 kCircleCurve · 동심 묶음 기준 0.01 mm (같은 리프 안 · 묶음 중심은 첫 원 중심)
+
+==== 카운터 ====
+리프 수: 2
+평면 face 수: 12
+안쪽 루프 수: 8
+채택 루프 수: 8
+탈락 · 원호 포함: 0
+탈락 · 기타 곡선 포함: 0
+탈락 · 읽기 실패: 0
+edge 2개 이상 채택 루프 수: 0
+묶음 수: 8
+지름 2개 이상 묶음 수: 0
+
+==== 리프별 ====
+번호	occurrence	부품 정의	채택 원	묶음	지름 2개 이상 묶음	탈락 원호 포함	탈락 기타 곡선	탈락 읽기 실패	리프 오류
+0	M7_아랫판:1	M7_아랫판.ipt	4	4	0	0	0	0	
+1	M7_윗판:1	M7_윗판.ipt	4	4	0	0	0	0	
+
+==== 묶음 목록 (8개) ====
+리프 번호	occurrence	묶음 번호	중심X	중심Y	중심Z	지름 (오름차순)
+0	M7_아랫판:1	0	-1.0066022089934756E-14	10	-20.000000000000004	4.917
+0	M7_아랫판:1	1	4.144832625267251E-15	10	19.999999999999996	4.917
+0	M7_아랫판:1	2	-1.0066022089934756E-14	0	-20.000000000000004	4.917
+0	M7_아랫판:1	3	4.144832625267251E-15	0	19.999999999999996	4.917
+1	M7_윗판:1	0	-8.948341015002599E-15	20	-20	6.6000000000000005
+1	M7_윗판:1	1	7.0388705395996584E-15	20	20	6.6000000000000005
+1	M7_윗판:1	2	-8.948341015002599E-15	10	-20	6.6000000000000005
+1	M7_윗판:1	3	7.0388705395996584E-15	10	20	6.6000000000000005
+
+==== 리프 쌍별 최근접 묶음 거리 (1쌍 · 거리 오름차순 · 필터 없음 · 판정 없음) ====
+묶음 없는 리프가 낀 쌍 (줄 없음): 0
+리프 A	occurrence A	묶음 A	지름 A (오름차순)	리프 B	occurrence B	묶음 B	지름 B (오름차순)	중심 3D 거리
+0	M7_아랫판:1	0	4.917	1	M7_윗판:1	2	6.6000000000000005	3.724377192068184E-15
+
+==== 연계 (W08) ====
+기준: 묶음 첫 루프의 첫 edge → 평면 아닌 인접 면(옆벽) → CreatedByFeature (프록시 직접 · Nothing 이면 NativeObject) → 첫 부모만 따라 올라감 (깊이 상한 6)
+1차 성공 묶음 수: 4
+1차 실패 묶음 수: 4
+CreatedByFeature · 프록시 직접 성공: 8
+CreatedByFeature · NativeObject 경유 성공: 0
+CreatedByFeature · 둘 다 Nothing (옆벽 없음 포함): 0
+
+---- CreatedByFeature 결과 타입별 묶음 수 ----
+kExtrudeFeatureProxyObject	4
+kHoleFeatureProxyObject	4
+
+---- 1차 실패 목록 (4개) ----
+리프 번호	occurrence	묶음 번호	사유
+1	M7_윗판:1	0	구멍 피처 아님 · 부모 없음 (kExtrudeFeatureProxyObject:돌출2) · 2차: 중심 0.02 mm 이내 HoleCenterPoints 없음
+1	M7_윗판:1	1	구멍 피처 아님 · 부모 없음 (kExtrudeFeatureProxyObject:돌출2) · 2차: 중심 0.02 mm 이내 HoleCenterPoints 없음
+1	M7_윗판:1	2	구멍 피처 아님 · 부모 없음 (kExtrudeFeatureProxyObject:돌출2) · 2차: 중심 0.02 mm 이내 HoleCenterPoints 없음
+1	M7_윗판:1	3	구멍 피처 아님 · 부모 없음 (kExtrudeFeatureProxyObject:돌출2) · 2차: 중심 0.02 mm 이내 HoleCenterPoints 없음
+
+---- 연계 2차 (1차 실패 묶음만 · 리프 HoleFeature 전체 HoleCenterPoints · Copy 후 리프 Transformation 1회 · 중심 거리 ≤ 0.02 mm) ----
+2차 가동 묶음 수: 4
+2차 성공 묶음 수: 0
+2차 실패 묶음 수: 4
+HoleFeature 단위 읽기 실패 (리프마다): 0
+HoleCenterPoints 항목 타입별 개수 (리프마다 읽은 점 기준):
+SketchPoint	2
+
+---- 교차 검증 (판정에 안 씀 · 2차를 모든 묶음에 적용) ----
+2차 단독 성공 묶음 수: 2 / 8
+1차 CreatedByFeature 종류별 2차 성공 (종류 · 묶음 수 · 2차 성공):
+kExtrudeFeatureProxyObject	4	0
+kHoleFeatureProxyObject	4	2
+1차 성공 · 2차 성공 묶음 중 피처 이름 같음: 2
+1차 성공 · 2차 성공 묶음 중 피처 이름 다름: 0
+
+---- 묶음별 탭 목록 (8개) ----
+리프 번호	occurrence	묶음 번호	연계 단계	피처 이름	Tapped	ThreadDesignation	비고
+0	M7_아랫판:1	0	1	구멍1	True	M6x1	
+0	M7_아랫판:1	1	1	구멍1	True	M6x1	
+0	M7_아랫판:1	2	1	구멍1	True	M6x1	
+0	M7_아랫판:1	3	1	구멍1	True	M6x1	
+1	M7_윗판:1	0	0		False		구멍 피처 아님 · 부모 없음 (kExtrudeFeatureProxyObject:돌출2) · 2차: 중심 0.02 mm 이내 HoleCenterPoints 없음
+1	M7_윗판:1	1	0		False		구멍 피처 아님 · 부모 없음 (kExtrudeFeatureProxyObject:돌출2) · 2차: 중심 0.02 mm 이내 HoleCenterPoints 없음
+1	M7_윗판:1	2	0		False		구멍 피처 아님 · 부모 없음 (kExtrudeFeatureProxyObject:돌출2) · 2차: 중심 0.02 mm 이내 HoleCenterPoints 없음
+1	M7_윗판:1	3	0		False		구멍 피처 아님 · 부모 없음 (kExtrudeFeatureProxyObject:돌출2) · 2차: 중심 0.02 mm 이내 HoleCenterPoints 없음
+
+==== 매칭 (W08 · Cap 2 · Tol 0.1) ====
+기준: 서로 다른 리프 묶음 쌍 · 중심 3D 거리 ≤ Cap 후보 · 거리 오름차순 그리디 · A쪽/B쪽 사용 집합 분리 (A = 리프 번호 작은 쪽) · 거리 ≤ Tol 이면 OK · 아니면 위치 불일치
+후보 수: 2
+확정 수: 2
+OK: 2
+NG (위치 불일치): 0
+
+---- 리프 쌍별 OK / NG (1쌍) ----
+리프 A	occurrence A	리프 B	occurrence B	확정	OK	NG
+0	M7_아랫판:1	1	M7_윗판:1	2	2	0
+
+---- 확정 줄 목록 (2줄 · 거리 오름차순) ----
+No.	판정	리프 A	occurrence A	묶음 A	리프 B	occurrence B	묶음 B	거리	연계 A	연계 B	탭 A	탭 B	중점X	중점Y	중점Z
+1	OK	0	M7_아랫판:1	0	1	M7_윗판:1	2	3.724377192068184E-15	1	없음	M6x1		-9.507181552468677E-15	10	-20
+2	OK	0	M7_아랫판:1	1	1	M7_윗판:1	3	4.582273445914119E-15	1	없음	M6x1		5.591851582433455E-15	10	20
+

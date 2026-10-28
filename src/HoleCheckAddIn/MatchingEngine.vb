@@ -4,7 +4,18 @@ Option Explicit On
 ' W07 · 실행 진입 · 진단 출력 (7-2 에서 AxisMatching.vb 에서 이동 · 7-6 에서 축 매칭 · 축 진단 제거)
 ' 결과에는 숫자와 문자열만 담는다 (COM 객체 금지 · decisions.md "W05 · 결과 구조에는 숫자와 문자열만 담음")
 ' 매칭 · 판정은 아직 연결하지 않는다 (W08 에서 MatchPair 로 연결)
+' W08 8-5 · RunMatching (Cap 후보 · 거리 오름차순 그리디 배타 · Tol 판정) 연결 · 결과는 진단 txt 와 ByRef 목록으로만 · 그리드는 8-6
 Public Module MatchingEngine
+
+    ' W08 8-5 · 매칭 후보 하나 · intOrder = 후보 생성 순서 (리프 A · 리프 B · 묶음 A · 묶음 B 순 이중 루프)
+    Private Class MatchCandidate
+        Public objClusterA As HoleCluster
+        Public objClusterB As HoleCluster
+        Public intClusterNumberA As Integer
+        Public intClusterNumberB As Integer
+        Public dblDistance As Double
+        Public intOrder As Integer
+    End Class
 
     ' W07 · 리프 쌍 하나의 최근접 묶음 · Loop 진단 출력용 · 판정 없음
     Private Class LeafPairNearest
@@ -19,20 +30,148 @@ Public Module MatchingEngine
 
     ' W07 7-5 · EdgeLoop 수집 실행 · 7-6 에서 축 경로 제거 · 쌍별 거리는 진단 txt 에만 쓴다
     ' strDiagnosticPath · 저장한 Loop 진단 txt 경로
-    Public Function RunLoopCollection(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByRef strDiagnosticPath As String) As System.Collections.Generic.List(Of HoleCluster)
+    ' W08 8-5 · dblCap(후보 범위) · dblTol(정렬 공차) 로 매칭 · colMatchPairs · 확정 줄 (거리 오름차순)
+    Public Function RunLoopCollection(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByVal dblCap As Double, ByVal dblTol As Double, ByRef strDiagnosticPath As String, ByRef colMatchPairs As System.Collections.Generic.List(Of MatchPair)) As System.Collections.Generic.List(Of HoleCluster)
         Dim objCounters As New LoopCounters()
         Dim colLeafSummaries As New System.Collections.Generic.List(Of LoopLeafSummary)()
 
         Dim colClusters As System.Collections.Generic.List(Of HoleCluster) = CollectHoleClusters(invAssemblyDocument, colLeafSummaries, objCounters)
 
-        strDiagnosticPath = WriteLoopDiagnostics(invAssemblyDocument, colLeafSummaries, colClusters, objCounters)
+        Dim intCandidateCount As Integer = 0
+        colMatchPairs = RunMatchingWithCount(colClusters, dblCap, dblTol, intCandidateCount)
+
+        strDiagnosticPath = WriteLoopDiagnostics(invAssemblyDocument, colLeafSummaries, colClusters, objCounters, colMatchPairs, dblCap, dblTol, intCandidateCount)
 
         Return colClusters
     End Function
 
+    ' W08 8-5 · 그리디 배타 매칭 · 후보 수가 필요 없는 호출용
+    Public Function RunMatching(ByVal colClusters As System.Collections.Generic.List(Of HoleCluster), ByVal dblCap As Double, ByVal dblTol As Double) As System.Collections.Generic.List(Of MatchPair)
+        Dim intCandidateCount As Integer = 0
+        Return RunMatchingWithCount(colClusters, dblCap, dblTol, intCandidateCount)
+    End Function
+
+    ' W08 8-5 · 서로 다른 리프 묶음 쌍 전부 → 3D 거리 ≤ dblCap 만 후보 (A = 리프 번호가 작은 쪽) → 거리 오름차순 → 그리디 확정
+    ' 사용 집합은 A쪽 · B쪽 따로 (키 = 리프 번호:리프 안 묶음 번호) · 둘 중 하나라도 이미 쓰였으면 건너뜀 (W08 시작 전 합의 · v4 문구)
+    ' 정렬 키는 거리 하나 · 경계 보정 없음 · 같은 거리는 후보 생성 순서로 둔다 (List.Sort 가 안정 정렬이 아니어서 · 동률 3키는 14주차)
+    ' 판정 · 거리 ≤ dblTol 이면 "OK" · 아니면 "위치 불일치" · intCandidateCount · Cap 이내 후보 수
+    Private Function RunMatchingWithCount(ByVal colClusters As System.Collections.Generic.List(Of HoleCluster), ByVal dblCap As Double, ByVal dblTol As Double, ByRef intCandidateCount As Integer) As System.Collections.Generic.List(Of MatchPair)
+        ' 리프 번호별 묶음 목록 · 목록 안 위치 = 리프 안 묶음 번호 (묶음 목록 섹션과 같은 번호)
+        Dim colLeafClusters As New System.Collections.Generic.Dictionary(Of Integer, System.Collections.Generic.List(Of HoleCluster))()
+        Dim colLeafIndexes As New System.Collections.Generic.List(Of Integer)()
+        For Each objCluster As HoleCluster In colClusters
+            If Not colLeafClusters.ContainsKey(objCluster.intLeafIndex) Then
+                colLeafClusters.Add(objCluster.intLeafIndex, New System.Collections.Generic.List(Of HoleCluster)())
+                colLeafIndexes.Add(objCluster.intLeafIndex)
+            End If
+            colLeafClusters(objCluster.intLeafIndex).Add(objCluster)
+        Next
+        colLeafIndexes.Sort()
+
+        Dim colCandidates As New System.Collections.Generic.List(Of MatchCandidate)()
+        For intPositionA As Integer = 0 To colLeafIndexes.Count - 2
+            For intPositionB As Integer = intPositionA + 1 To colLeafIndexes.Count - 1
+                Dim colClustersA As System.Collections.Generic.List(Of HoleCluster) = colLeafClusters(colLeafIndexes(intPositionA))
+                Dim colClustersB As System.Collections.Generic.List(Of HoleCluster) = colLeafClusters(colLeafIndexes(intPositionB))
+                For intNumberA As Integer = 0 To colClustersA.Count - 1
+                    For intNumberB As Integer = 0 To colClustersB.Count - 1
+                        Dim objClusterA As HoleCluster = colClustersA(intNumberA)
+                        Dim objClusterB As HoleCluster = colClustersB(intNumberB)
+                        Dim dblDistance As Double = GetDistance3D(objClusterA.dblCenterX, objClusterA.dblCenterY, objClusterA.dblCenterZ,
+                                                                  objClusterB.dblCenterX, objClusterB.dblCenterY, objClusterB.dblCenterZ)
+                        If dblDistance > dblCap Then
+                            Continue For
+                        End If
+                        Dim objCandidate As New MatchCandidate()
+                        objCandidate.objClusterA = objClusterA
+                        objCandidate.objClusterB = objClusterB
+                        objCandidate.intClusterNumberA = intNumberA
+                        objCandidate.intClusterNumberB = intNumberB
+                        objCandidate.dblDistance = dblDistance
+                        objCandidate.intOrder = colCandidates.Count
+                        colCandidates.Add(objCandidate)
+                    Next
+                Next
+            Next
+        Next
+        intCandidateCount = colCandidates.Count
+
+        colCandidates.Sort(AddressOf CompareMatchCandidate)
+
+        Dim colUsedA As New System.Collections.Generic.HashSet(Of String)()
+        Dim colUsedB As New System.Collections.Generic.HashSet(Of String)()
+        Dim colMatchPairs As New System.Collections.Generic.List(Of MatchPair)()
+        For Each objCandidate As MatchCandidate In colCandidates
+            Dim strKeyA As String = objCandidate.objClusterA.intLeafIndex.ToString() & ":" & objCandidate.intClusterNumberA.ToString()
+            Dim strKeyB As String = objCandidate.objClusterB.intLeafIndex.ToString() & ":" & objCandidate.intClusterNumberB.ToString()
+            If colUsedA.Contains(strKeyA) OrElse colUsedB.Contains(strKeyB) Then
+                Continue For
+            End If
+            colUsedA.Add(strKeyA)
+            colUsedB.Add(strKeyB)
+            colMatchPairs.Add(CreateMatchPair(objCandidate, dblTol))
+        Next
+
+        Return colMatchPairs
+    End Function
+
+    ' W08 8-5 · 거리 오름차순 · 같은 거리는 후보 생성 순서 (안정 정렬 대신)
+    Private Function CompareMatchCandidate(ByVal objCandidateA As MatchCandidate, ByVal objCandidateB As MatchCandidate) As Integer
+        Dim intResult As Integer = objCandidateA.dblDistance.CompareTo(objCandidateB.dblDistance)
+        If intResult <> 0 Then
+            Return intResult
+        End If
+        Return objCandidateA.intOrder.CompareTo(objCandidateB.intOrder)
+    End Function
+
+    ' W08 8-5 · 확정 후보 하나 → MatchPair · 숫자와 문자열만 · 목표점 = 두 묶음 중심의 중점 (mm · 조립품 좌표)
+    Private Function CreateMatchPair(ByVal objCandidate As MatchCandidate, ByVal dblTol As Double) As MatchPair
+        Dim objClusterA As HoleCluster = objCandidate.objClusterA
+        Dim objClusterB As HoleCluster = objCandidate.objClusterB
+
+        Dim objPair As New MatchPair()
+        objPair.strOccurrenceNameA = objClusterA.strOccurrenceName
+        objPair.strOccurrenceNameB = objClusterB.strOccurrenceName
+        objPair.intLeafIndexA = objClusterA.intLeafIndex
+        objPair.intLeafIndexB = objClusterB.intLeafIndex
+        objPair.intClusterIndexA = objCandidate.intClusterNumberA
+        objPair.intClusterIndexB = objCandidate.intClusterNumberB
+        objPair.dblCenterDistance = objCandidate.dblDistance
+        If objCandidate.dblDistance <= dblTol Then
+            objPair.strJudgement = "OK"
+        Else
+            objPair.strJudgement = "위치 불일치"
+        End If
+        objPair.dblTargetX = (objClusterA.dblCenterX + objClusterB.dblCenterX) / 2.0
+        objPair.dblTargetY = (objClusterA.dblCenterY + objClusterB.dblCenterY) / 2.0
+        objPair.dblTargetZ = (objClusterA.dblCenterZ + objClusterB.dblCenterZ) / 2.0
+        objPair.strLinkStageA = FormatLinkStage(objClusterA.intLinkStage)
+        objPair.strLinkStageB = FormatLinkStage(objClusterB.intLinkStage)
+        objPair.strTapA = FormatTap(objClusterA)
+        objPair.strTapB = FormatTap(objClusterB)
+        Return objPair
+    End Function
+
+    ' W08 8-5 · 연계 단계 표기 · 1 = 옆벽 · 2 = 중심 · 그 밖 = "없음"
+    Private Function FormatLinkStage(ByVal intLinkStage As Integer) As String
+        If intLinkStage = 1 OrElse intLinkStage = 2 Then
+            Return intLinkStage.ToString()
+        End If
+        Return "없음"
+    End Function
+
+    ' W08 8-5 · 탭 표기 · 탭이면 ThreadDesignation · 탭이 아니면 빈칸
+    Private Function FormatTap(ByVal objCluster As HoleCluster) As String
+        If objCluster.bolTapped Then
+            Return objCluster.strThreadDesignation
+        End If
+        Return ""
+    End Function
+
     ' W07 7-5 · Loop 진단 txt · Feature 진단과 같은 폴더(바탕화면) · 같은 인코딩(BOM 포함 UTF-8) · 같은 이름 규칙(접두만 Loop)
     ' 저장 알림 메시지박스는 띄우지 않는다 · 폼 상태 라벨에 표시
-    Private Function WriteLoopDiagnostics(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByVal colLeafSummaries As System.Collections.Generic.List(Of LoopLeafSummary), ByVal colClusters As System.Collections.Generic.List(Of HoleCluster), ByVal objCounters As LoopCounters) As String
+    ' W08 8-5 · 매칭 섹션을 맨 끝에 붙이려고 매칭 결과 · Cap · Tol · 후보 수 인자 추가
+    Private Function WriteLoopDiagnostics(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByVal colLeafSummaries As System.Collections.Generic.List(Of LoopLeafSummary), ByVal colClusters As System.Collections.Generic.List(Of HoleCluster), ByVal objCounters As LoopCounters, ByVal colMatchPairs As System.Collections.Generic.List(Of MatchPair), ByVal dblCap As Double, ByVal dblTol As Double, ByVal intCandidateCount As Integer) As String
         Dim objText As New System.Text.StringBuilder()
         objText.AppendLine("단위 mm (API cm ×10) · 좌표는 조립품 좌표 · Transformation 은 곱하지 않음")
         objText.AppendLine("문서: " & invAssemblyDocument.FullFileName)
@@ -101,6 +240,8 @@ Public Module MatchingEngine
         WriteLeafPairNearest(objText, colLeafSummaries, colClusters)
 
         WriteLinkSection(objText, colClusters, objCounters)
+
+        WriteMatchingSection(objText, colMatchPairs, dblCap, dblTol, intCandidateCount)
 
         Dim strDocumentName As String = System.IO.Path.GetFileNameWithoutExtension(invAssemblyDocument.DisplayName)
         For Each chrInvalid As Char In System.IO.Path.GetInvalidFileNameChars()
@@ -277,6 +418,91 @@ Public Module MatchingEngine
         Next
         objText.AppendLine()
     End Sub
+
+    ' W08 8-5 · 매칭 섹션 · 요약 · 리프 쌍별 OK/NG · 확정 줄 목록 (거리 오름차순 · R 형식)
+    Private Sub WriteMatchingSection(ByVal objText As System.Text.StringBuilder, ByVal colMatchPairs As System.Collections.Generic.List(Of MatchPair), ByVal dblCap As Double, ByVal dblTol As Double, ByVal intCandidateCount As Integer)
+        Dim intOkCount As Integer = 0
+        For Each objPair As MatchPair In colMatchPairs
+            If objPair.strJudgement = "OK" Then
+                intOkCount += 1
+            End If
+        Next
+
+        objText.AppendLine("==== 매칭 (W08 · Cap " & FormatDouble(dblCap) & " · Tol " & FormatDouble(dblTol) & ") ====")
+        objText.AppendLine("기준: 서로 다른 리프 묶음 쌍 · 중심 3D 거리 ≤ Cap 후보 · 거리 오름차순 그리디 · A쪽/B쪽 사용 집합 분리 (A = 리프 번호 작은 쪽) · 거리 ≤ Tol 이면 OK · 아니면 위치 불일치")
+        objText.AppendLine("후보 수: " & intCandidateCount.ToString())
+        objText.AppendLine("확정 수: " & colMatchPairs.Count.ToString())
+        objText.AppendLine("OK: " & intOkCount.ToString())
+        objText.AppendLine("NG (위치 불일치): " & (colMatchPairs.Count - intOkCount).ToString())
+        objText.AppendLine()
+
+        ' 리프 쌍 키 = "리프 A:리프 B" · 첫 등장 순서를 리프 번호 순으로 정렬해 쓴다
+        Dim colPairKeys As New System.Collections.Generic.List(Of String)()
+        Dim colPairFirst As New System.Collections.Generic.Dictionary(Of String, MatchPair)()
+        Dim colPairOkCounts As New System.Collections.Generic.Dictionary(Of String, Integer)()
+        Dim colPairNgCounts As New System.Collections.Generic.Dictionary(Of String, Integer)()
+        For Each objPair As MatchPair In colMatchPairs
+            Dim strPairKey As String = objPair.intLeafIndexA.ToString() & ":" & objPair.intLeafIndexB.ToString()
+            If Not colPairFirst.ContainsKey(strPairKey) Then
+                colPairKeys.Add(strPairKey)
+                colPairFirst.Add(strPairKey, objPair)
+                colPairOkCounts.Add(strPairKey, 0)
+                colPairNgCounts.Add(strPairKey, 0)
+            End If
+            If objPair.strJudgement = "OK" Then
+                colPairOkCounts(strPairKey) += 1
+            Else
+                colPairNgCounts(strPairKey) += 1
+            End If
+        Next
+        colPairKeys.Sort(Function(strKeyA As String, strKeyB As String) CompareLeafPairKey(colPairFirst(strKeyA), colPairFirst(strKeyB)))
+
+        objText.AppendLine("---- 리프 쌍별 OK / NG (" & colPairKeys.Count.ToString() & "쌍) ----")
+        objText.AppendLine(JoinTab("리프 A", "occurrence A", "리프 B", "occurrence B", "확정", "OK", "NG"))
+        For Each strPairKey As String In colPairKeys
+            Dim objFirst As MatchPair = colPairFirst(strPairKey)
+            objText.AppendLine(JoinTab(objFirst.intLeafIndexA.ToString(),
+                                       objFirst.strOccurrenceNameA,
+                                       objFirst.intLeafIndexB.ToString(),
+                                       objFirst.strOccurrenceNameB,
+                                       (colPairOkCounts(strPairKey) + colPairNgCounts(strPairKey)).ToString(),
+                                       colPairOkCounts(strPairKey).ToString(),
+                                       colPairNgCounts(strPairKey).ToString()))
+        Next
+        objText.AppendLine()
+
+        objText.AppendLine("---- 확정 줄 목록 (" & colMatchPairs.Count.ToString() & "줄 · 거리 오름차순) ----")
+        objText.AppendLine(JoinTab("No.", "판정", "리프 A", "occurrence A", "묶음 A", "리프 B", "occurrence B", "묶음 B", "거리", "연계 A", "연계 B", "탭 A", "탭 B", "중점X", "중점Y", "중점Z"))
+        For intIndex As Integer = 0 To colMatchPairs.Count - 1
+            Dim objPair As MatchPair = colMatchPairs(intIndex)
+            objText.AppendLine(JoinTab((intIndex + 1).ToString(),
+                                       objPair.strJudgement,
+                                       objPair.intLeafIndexA.ToString(),
+                                       objPair.strOccurrenceNameA,
+                                       objPair.intClusterIndexA.ToString(),
+                                       objPair.intLeafIndexB.ToString(),
+                                       objPair.strOccurrenceNameB,
+                                       objPair.intClusterIndexB.ToString(),
+                                       FormatDouble(objPair.dblCenterDistance),
+                                       objPair.strLinkStageA,
+                                       objPair.strLinkStageB,
+                                       objPair.strTapA,
+                                       objPair.strTapB,
+                                       FormatDouble(objPair.dblTargetX),
+                                       FormatDouble(objPair.dblTargetY),
+                                       FormatDouble(objPair.dblTargetZ)))
+        Next
+        objText.AppendLine()
+    End Sub
+
+    ' W08 8-5 · 리프 쌍 표 정렬 · 리프 A · 리프 B 번호 순
+    Private Function CompareLeafPairKey(ByVal objPairA As MatchPair, ByVal objPairB As MatchPair) As Integer
+        Dim intResult As Integer = objPairA.intLeafIndexA.CompareTo(objPairB.intLeafIndexA)
+        If intResult <> 0 Then
+            Return intResult
+        End If
+        Return objPairA.intLeafIndexB.CompareTo(objPairB.intLeafIndexB)
+    End Function
 
     ' W08 8-4 · 이름별 개수 · 이름 순 (Ordinal) · 키와 값을 탭으로
     Private Sub WriteCountDictionary(ByVal objText As System.Text.StringBuilder, ByVal colCounts As System.Collections.Generic.Dictionary(Of String, Integer))
