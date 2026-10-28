@@ -15,4 +15,7 @@ Friend Module Globals
     ' W07 · 같은 리프 안 동심 묶음 기준 (mm)
     Friend Const dblConcentricClusterThreshold As Double = 0.01
 
+    ' W08 · 연계 2차 · 묶음 중심과 HoleCenterPoints (조립품 좌표) 의 3D 거리 기준 (mm)
+    Friend Const dblLinkCenterToleranceMillimeter As Double = 0.02
+
 End Module

@@ -86,6 +86,7 @@ Friend Module CollectFromPart
     ' W07 7-5 · EdgeLoop 수집 · 순회 · 리프 요약 · 카운터 방식은 7-5 당시 CollectCylinderAxes 와 같다 (7-6 에서 축 수집 제거)
     ' 평면 face → 안쪽 EdgeLoop → 모든 edge 가 kCircleCurve 인 루프만 채택 → 같은 리프 안 동심 묶음
     ' 프록시 Geometry 는 이미 조립품 좌표 · Transformation 은 곱하지 않고 cm→mm 만 한다 (W04 결정 · W07 decisions)
+    ' W08 8-4 · 연계 2차의 HoleCenterPoints 는 파트 좌표라 리프 Transformation 을 한 번 곱한다 (ReadHoleCenterCandidates)
     Friend Function CollectHoleClusters(ByVal invAssemblyDocument As Inventor.AssemblyDocument, ByVal colLeafSummaries As System.Collections.Generic.List(Of LoopLeafSummary), ByVal objCounters As LoopCounters) As System.Collections.Generic.List(Of HoleCluster)
         Dim colClusters As New System.Collections.Generic.List(Of HoleCluster)()
         Dim intLeafIndex As Integer = 0
@@ -98,6 +99,8 @@ Friend Module CollectFromPart
 
             ' 동심 묶음은 같은 리프 안에서만 찾는다
             Dim colLeafClusters As New System.Collections.Generic.List(Of HoleCluster)()
+            ' W08 8-4 · 묶음별 1차 CreatedByFeature Type 이름 · colLeafClusters 와 같은 순서 · 교차 검증 진단용
+            Dim colLeafClusterFeatureTypes As New System.Collections.Generic.List(Of String)()
 
             ' W07 7-6 · 리프 단위 탈락 수는 전체 카운터의 리프 시작 전 값과의 차이로 기록한다 (수집 로직은 그대로)
             Dim intRejectedArcBefore As Integer = objCounters.intRejectedArcCount
@@ -130,6 +133,7 @@ Friend Module CollectFromPart
                                     objSummary.intAcceptedCircleCount += 1
                                     ' W08 8-3 · 연계 카운터는 묶음 단위 · 새 묶음을 만든 첫 루프의 결과만 센다
                                     If AddToCluster(colLeafClusters, objCircleInfo) Then
+                                        colLeafClusterFeatureTypes.Add(strFeatureTypeName)
                                         CountClusterLink(objCounters, intFeatureSource, strFeatureTypeName)
                                     End If
                                 Catch
@@ -144,6 +148,9 @@ Friend Module CollectFromPart
             Catch objException As System.Exception
                 objSummary.strLeafError = objException.Message
             End Try
+
+            ' W08 8-4 · 연계 2차 · 리프 루프 수집이 끝난 뒤 · 1차 실패 묶음에만 적용 (교차 검증은 모든 묶음)
+            LinkHoleFeatureByCenter(invLeaf, colLeafClusters, colLeafClusterFeatureTypes, objCounters)
 
             objSummary.intRejectedArcCount = objCounters.intRejectedArcCount - intRejectedArcBefore
             objSummary.intRejectedOtherCurveCount = objCounters.intRejectedOtherCurveCount - intRejectedOtherCurveBefore
@@ -289,7 +296,217 @@ Friend Module CollectFromPart
             Return
         End Try
         objCircleInfo.intLinkStage = 1
+
+        ' W08 8-4 · 탭 읽기 · 실패해도 연계 단계는 1 유지 · 사유만 strLinkNote 에
+        Dim bolTapped As Boolean = False
+        Dim strThreadDesignation As String = ""
+        objCircleInfo.strLinkNote = ReadHoleTap(invHoleFeature, bolTapped, strThreadDesignation)
+        objCircleInfo.bolTapped = bolTapped
+        objCircleInfo.strThreadDesignation = strThreadDesignation
     End Sub
+
+    ' W08 8-4 · 탭 읽기 · Tapped 가 True 면 TapInfo 를 HoleTapInfo 로 TypeOf 확인 후 ThreadDesignation
+    ' 탭 홀에서 FastenerSize · HoleDiameter 는 읽지 않는다 (W04 E_FAIL) · 반환 = 실패 사유 (성공이면 "")
+    Private Function ReadHoleTap(ByVal invHoleFeature As Inventor.HoleFeature, ByRef bolTapped As Boolean, ByRef strThreadDesignation As String) As String
+        bolTapped = False
+        strThreadDesignation = ""
+        Try
+            bolTapped = invHoleFeature.Tapped
+        Catch objException As System.Exception
+            Return "Tapped 읽기 실패: " & objException.Message
+        End Try
+        If Not bolTapped Then
+            Return ""
+        End If
+
+        Dim objTapInfo As Object = Nothing
+        Try
+            objTapInfo = invHoleFeature.TapInfo
+        Catch objException As System.Exception
+            Return "TapInfo 읽기 실패: " & objException.Message
+        End Try
+        If Not TypeOf objTapInfo Is Inventor.HoleTapInfo Then
+            If objTapInfo Is Nothing Then
+                Return "TapInfo 없음 (Nothing)"
+            End If
+            Return "TapInfo 가 HoleTapInfo 아님 (" & Microsoft.VisualBasic.Information.TypeName(objTapInfo) & ")"
+        End If
+
+        Try
+            strThreadDesignation = CType(objTapInfo, Inventor.HoleTapInfo).ThreadDesignation
+        Catch objException As System.Exception
+            Return "ThreadDesignation 읽기 실패: " & objException.Message
+        End Try
+        Return ""
+    End Function
+
+    ' W08 8-4 · 연계 2차 후보 · 리프의 HoleFeature 한 구멍 중심 (mm · 조립품 좌표) · 숫자와 문자열만
+    Private Class HoleCenterCandidate
+        Public dblCenterX As Double
+        Public dblCenterY As Double
+        Public dblCenterZ As Double
+        Public strFeatureName As String = ""
+        Public bolTapped As Boolean
+        Public strThreadDesignation As String = ""
+        Public strTapNote As String = ""
+    End Class
+
+    ' W08 8-4 · 연계 2차 · 리프의 HoleFeature 전체 HoleCenterPoints 와 묶음 중심 거리 ≤ dblLinkCenterToleranceMillimeter 인 가장 가까운 점
+    ' intLinkStage = 0 인 묶음에만 결과를 쓴다 · 교차 검증(판정에 안 씀)은 모든 묶음에 대해 센다
+    ' colLeafClusterFeatureTypes 는 colLeafClusters 와 같은 순서의 1차 CreatedByFeature Type 이름
+    Private Sub LinkHoleFeatureByCenter(ByVal invLeaf As Inventor.ComponentOccurrence, ByVal colLeafClusters As System.Collections.Generic.List(Of HoleCluster), ByVal colLeafClusterFeatureTypes As System.Collections.Generic.List(Of String), ByVal objCounters As LoopCounters)
+        If colLeafClusters.Count = 0 Then
+            Return
+        End If
+
+        Dim strReadNote As String = ""
+        Dim colCandidates As System.Collections.Generic.List(Of HoleCenterCandidate) = ReadHoleCenterCandidates(invLeaf, objCounters, strReadNote)
+
+        For intIndex As Integer = 0 To colLeafClusters.Count - 1
+            Dim objCluster As HoleCluster = colLeafClusters(intIndex)
+            Dim objNearest As HoleCenterCandidate = FindNearestCandidate(colCandidates, objCluster)
+
+            ' 교차 검증 · 판정에 쓰지 않는다
+            If objNearest IsNot Nothing Then
+                objCounters.intCrossCheckSuccessCount += 1
+                Dim intTypeCount As Integer = 0
+                objCounters.colCrossCheckSuccessByFeatureType.TryGetValue(colLeafClusterFeatureTypes(intIndex), intTypeCount)
+                objCounters.colCrossCheckSuccessByFeatureType(colLeafClusterFeatureTypes(intIndex)) = intTypeCount + 1
+                If objCluster.intLinkStage = 1 Then
+                    If System.String.Equals(objCluster.strHoleFeatureName, objNearest.strFeatureName, System.StringComparison.Ordinal) Then
+                        objCounters.intCrossCheckSameNameCount += 1
+                    Else
+                        objCounters.intCrossCheckDifferentNameCount += 1
+                    End If
+                End If
+            End If
+
+            If objCluster.intLinkStage <> 0 Then
+                Continue For
+            End If
+            objCounters.intLink2RunCount += 1
+
+            If objNearest Is Nothing Then
+                objCounters.intLink2FailCount += 1
+                If strReadNote <> "" Then
+                    objCluster.strLinkNote &= " · 2차: " & strReadNote
+                Else
+                    objCluster.strLinkNote &= " · 2차: 중심 " & FormatDouble(dblLinkCenterToleranceMillimeter) & " mm 이내 HoleCenterPoints 없음"
+                End If
+                Continue For
+            End If
+
+            objCounters.intLink2SuccessCount += 1
+            objCluster.intLinkStage = 2
+            objCluster.strHoleFeatureName = objNearest.strFeatureName
+            objCluster.bolTapped = objNearest.bolTapped
+            objCluster.strThreadDesignation = objNearest.strThreadDesignation
+            objCluster.strLinkNote &= " · 2차 성공"
+            If objNearest.strTapNote <> "" Then
+                objCluster.strLinkNote &= " · " & objNearest.strTapNote
+            End If
+        Next
+    End Sub
+
+    ' W08 8-4 · 리프 Definition (PartComponentDefinition) 의 HoleFeature 전체 HoleCenterPoints 를 조립품 좌표 mm 로 읽는다
+    ' 점은 Copy() 한 뒤 TransformBy(리프 Transformation) · Transformation 은 한 번만 적용 (W04 결정 · 리프 프록시는 누적 변환 포함)
+    ' COM 객체는 이 함수 밖으로 내보내지 않는다 · strReadNote = 리프 단위 읽기 실패 사유 (성공이면 "")
+    Private Function ReadHoleCenterCandidates(ByVal invLeaf As Inventor.ComponentOccurrence, ByVal objCounters As LoopCounters, ByRef strReadNote As String) As System.Collections.Generic.List(Of HoleCenterCandidate)
+        Dim colCandidates As New System.Collections.Generic.List(Of HoleCenterCandidate)()
+        strReadNote = ""
+
+        Dim invPartDefinition As Inventor.PartComponentDefinition = Nothing
+        Dim invTransformation As Inventor.Matrix = Nothing
+        Try
+            Dim invDefinition As Inventor.ComponentDefinition = invLeaf.Definition
+            If Not TypeOf invDefinition Is Inventor.PartComponentDefinition Then
+                strReadNote = "리프 Definition 이 PartComponentDefinition 아님"
+                Return colCandidates
+            End If
+            invPartDefinition = CType(invDefinition, Inventor.PartComponentDefinition)
+            invTransformation = invLeaf.Transformation
+        Catch objException As System.Exception
+            strReadNote = "리프 Definition · Transformation 읽기 실패: " & objException.Message
+            Return colCandidates
+        End Try
+
+        Try
+            For Each invHoleFeature As Inventor.HoleFeature In invPartDefinition.Features.HoleFeatures
+                Try
+                    Dim strFeatureName As String = invHoleFeature.Name
+                    Dim bolTapped As Boolean = False
+                    Dim strThreadDesignation As String = ""
+                    Dim strTapNote As String = ReadHoleTap(invHoleFeature, bolTapped, strThreadDesignation)
+
+                    For Each objCenter As Object In invHoleFeature.HoleCenterPoints
+                        Dim invPartPoint As Inventor.Point = ReadCenterPoint(objCenter, objCounters)
+                        If invPartPoint Is Nothing Then
+                            Continue For
+                        End If
+                        Dim invAssemblyPoint As Inventor.Point = invPartPoint.Copy()
+                        invAssemblyPoint.TransformBy(invTransformation)
+
+                        Dim objCandidate As New HoleCenterCandidate()
+                        objCandidate.dblCenterX = ConvertCentimeterToMillimeter(invAssemblyPoint.X)
+                        objCandidate.dblCenterY = ConvertCentimeterToMillimeter(invAssemblyPoint.Y)
+                        objCandidate.dblCenterZ = ConvertCentimeterToMillimeter(invAssemblyPoint.Z)
+                        objCandidate.strFeatureName = strFeatureName
+                        objCandidate.bolTapped = bolTapped
+                        objCandidate.strThreadDesignation = strThreadDesignation
+                        objCandidate.strTapNote = strTapNote
+                        colCandidates.Add(objCandidate)
+                    Next
+                Catch
+                    objCounters.intHoleCenterReadFailedCount += 1
+                End Try
+            Next
+        Catch objException As System.Exception
+            strReadNote = "HoleFeatures 순회 실패: " & objException.Message
+        End Try
+
+        Return colCandidates
+    End Function
+
+    ' W08 8-4 · HoleCenterPoints 항목 하나 → 파트 좌표 3D 점 (cm) · 타입별로 센다 · 모르는 타입은 개수만 세고 Nothing
+    Private Function ReadCenterPoint(ByVal objCenter As Object, ByVal objCounters As LoopCounters) As Inventor.Point
+        Dim strTypeLabel As String
+        Dim invPoint As Inventor.Point = Nothing
+        If TypeOf objCenter Is Inventor.SketchPoint Then
+            strTypeLabel = "SketchPoint"
+            invPoint = CType(objCenter, Inventor.SketchPoint).Geometry3d
+        ElseIf TypeOf objCenter Is Inventor.SketchPoint3D Then
+            strTypeLabel = "SketchPoint3D"
+            invPoint = CType(objCenter, Inventor.SketchPoint3D).Geometry
+        ElseIf TypeOf objCenter Is Inventor.WorkPoint Then
+            strTypeLabel = "WorkPoint"
+            invPoint = CType(objCenter, Inventor.WorkPoint).Point
+        ElseIf TypeOf objCenter Is Inventor.Point Then
+            strTypeLabel = "Point"
+            invPoint = CType(objCenter, Inventor.Point)
+        Else
+            strTypeLabel = "기타:" & Microsoft.VisualBasic.Information.TypeName(objCenter)
+        End If
+
+        Dim intTypeCount As Integer = 0
+        objCounters.colHoleCenterPointTypeCounts.TryGetValue(strTypeLabel, intTypeCount)
+        objCounters.colHoleCenterPointTypeCounts(strTypeLabel) = intTypeCount + 1
+        Return invPoint
+    End Function
+
+    ' W08 8-4 · 묶음 중심과 3D 거리 ≤ dblLinkCenterToleranceMillimeter 인 후보 중 가장 가까운 것 · 없으면 Nothing
+    Private Function FindNearestCandidate(ByVal colCandidates As System.Collections.Generic.List(Of HoleCenterCandidate), ByVal objCluster As HoleCluster) As HoleCenterCandidate
+        Dim objNearest As HoleCenterCandidate = Nothing
+        Dim dblNearestDistance As Double = System.Double.MaxValue
+        For Each objCandidate As HoleCenterCandidate In colCandidates
+            Dim dblDistance As Double = GetDistance3D(objCluster.dblCenterX, objCluster.dblCenterY, objCluster.dblCenterZ,
+                                                      objCandidate.dblCenterX, objCandidate.dblCenterY, objCandidate.dblCenterZ)
+            If dblDistance <= dblLinkCenterToleranceMillimeter AndAlso dblDistance < dblNearestDistance Then
+                dblNearestDistance = dblDistance
+                objNearest = objCandidate
+            End If
+        Next
+        Return objNearest
+    End Function
 
     ' W08 8-3 · CreatedByFeature 읽기 · 예외도 Nothing 으로 본다
     Private Function ReadCreatedByFeature(ByVal invFace As Inventor.Face) As Inventor.PartFeature

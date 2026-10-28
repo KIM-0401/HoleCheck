@@ -112,4 +112,15 @@ Friend Class LoopCounters
     Public intLinkFailCount As Integer
     ' W08 8-3 · CreatedByFeature 결과 Type 이름별 묶음 수 · 진단 출력용 · 문자열과 숫자만
     Public colCreatedByFeatureTypeCounts As New System.Collections.Generic.Dictionary(Of String, Integer)()
+    ' W08 8-4 · 연계 2차 · 가동 = 1차 실패 묶음 · 성공은 위 intLink2SuccessCount
+    Public intLink2RunCount As Integer
+    Public intLink2FailCount As Integer
+    ' W08 8-4 · HoleCenterPoints 항목 타입별 개수 (리프마다 읽은 점 기준) · 피처 단위 읽기 실패 수
+    Public colHoleCenterPointTypeCounts As New System.Collections.Generic.Dictionary(Of String, Integer)()
+    Public intHoleCenterReadFailedCount As Integer
+    ' W08 8-4 · 교차 검증 (판정에 안 씀) · 2차를 모든 묶음에 적용한 결과
+    Public intCrossCheckSuccessCount As Integer
+    Public colCrossCheckSuccessByFeatureType As New System.Collections.Generic.Dictionary(Of String, Integer)()
+    Public intCrossCheckSameNameCount As Integer
+    Public intCrossCheckDifferentNameCount As Integer
 End Class

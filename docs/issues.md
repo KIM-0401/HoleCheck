@@ -268,3 +268,15 @@
 - 원인: M7 은 아랫판이 HoleFeature · 윗판만 압출컷(ExtrudeFeature)인 모델. 예측은 모델 이름(M7_압출컷)만 보고 두 판 모두 압출컷이라고 가정함 (W06 근거도 "M7 윗판 ExtrudeFeature 경로"로 윗판만 적혀 있었음)
 - 처리: 코드 변경 없음. 8-7 대조 표의 M7 연계 예측을 "윗판 4묶음 실패 · 아랫판 4묶음 성공" 으로 읽는다. 연계 2차(8-4)에서 윗판 4묶음이 HoleCenterPoints 로도 안 잡히는지 확인 (HoleFeature 가 없으므로 실패 예측)
 - 왜 예측 못 했나: 예측을 쓸 때 M7 리프별 부품 정의 · 피처 구성을 확인하지 않고 모델 이름으로 일반화했다. W06 기록에 윗판만 ExtrudeFeature 라고 적혀 있었는데 대조하지 않았다
+
+## W08 · 8-4 실행 txt 가 8-3 txt 와 같음 (새 DLL 미배포)
+- 증상: 8-4 Loop txt 3개(홀간 거리 확인-1_20261028_161206 · M7_161210 · nested_top_161215)가 8-3 txt(_155342 · _155351 · _155359)와 시각 줄 외에 전부 같음 (줄 1296 / 56 / 1296 · 차이 0). "연계 2차" · "교차 검증" · "묶음별 탭 목록" 줄 0
+- 원인: Addins 폴더의 HoleCheckAddIn.dll 이 15:50:12 (8-3 빌드) 그대로이고, bin\Debug 의 16:10:36 빌드(8-4)가 복사되지 않았음. deploy.ps1 미실행 또는 Inventor 실행 중이라 스크립트가 "Inventor 실행 중" 으로 종료된 것으로 보임 (추정 · 실행 기록 없음)
+- 처리: 코드 변경 없음. W08.md 8-4 예측 실측 칸은 비워 둠. Inventor 완전 종료 → deploy.ps1 → 배포 폴더 DLL 시각이 16:10:36 이후인지 확인 → 세 모델 재실행 · 잘못 만든 txt 3개는 삭제 · 재배포 후 재실행 · 이후 배포마다 Addins 폴더 DLL 시각 확인
+- 왜 예측 못 했나: 실행 결과를 읽기 전에 배포 DLL 시각과 txt 의 새 섹션 존재를 확인하는 절차가 없었다. deploy.ps1 은 Inventor 실행 중이면 exit 1 로 끝나지만 빌드 · 실행 흐름에서 그 출력을 확인하지 않았다
+
+## W08 · (관찰) M5 윗판(파트-7:1) 탭 0 은 클리어런스 홀이라 정상 · 예측 오류
+- 증상: 8-4 Loop txt (홀간 거리 확인-1_20261028_162025) 묶음별 탭 목록에서 리프 14 홀간 거리 확인 파트-7:1 의 10묶음(구멍1~구멍5 · 각 2묶음)이 모두 연계 단계 1 · Tapped False · ThreadDesignation 빈칸 · 비고 빈칸. W08.md 8-4 예측은 "M5 윗판 M6 · M8 · M6 탭 호칭이 읽힘". 아래판 파트-2:8 은 M20x2.5 · M8x1.25 · M6x1 · M5x0.8 로 예측과 일치 · M7 아랫판 M6x1 ×4 도 일치
+- 원인: W04 API Probe(probe_block-1_20261002.txt · probe_nested_top_20261002.txt 324~360행)에서 파트-7 구멍1~5 모두 Tapped False · IsClearanceHole True · FastenerSize M6 · M8 · M6 · Ø8 · Ø12 · HoleType kDrilledHole. 8-4 가 Tapped False 로 읽은 것은 정확함
+- 처리: W04 Probe 로 확인 (Inventor 에서 따로 열어 볼 필요 없음). 코드 변경 없음. 8주차 연계는 Tapped · ThreadDesignation 까지만 읽으므로 클리어런스 홀은 "탭 아님" 으로 보이는 것이 정상. 탭 ↔ 클리어런스 정합 판정(IsClearanceHole · ClearanceInfo.FastenerSize)은 12주차
+- 왜 예측 못 했나: W04 대조표의 M6 · M8 표기가 탭 호칭인지 클리어런스 FastenerSize 인지 구분하지 않았다. 같은 표에 Ø8 · Ø12 처럼 클리어런스 형식이 섞여 있었는데 확인하지 않았다

@@ -216,3 +216,9 @@
 - 대안: intLinkFailCount = 1차 실패(HoleFeature 못 찾음) 묶음 수 · 경로를 LoopCircleInfo 필드로 추가 · 루프 단위 집계
 - 이유: 8-3 지시의 진단 카운터 3개(프록시 직접 · NativeObject 경유 · 둘 다 Nothing)와 LoopCounters 필드 3개를 맞춤. 연계 필드 5개 외의 진단 값을 HoleCluster 로 복사하지 않으려고 ByRef 로 넘김. ObjectCollection 인덱서 시작 번호가 미확인(api_paths.md)
 - 영향 파일: src/HoleCheckAddIn/CollectFromPart.vb (CollectHoleClusters · ReadCircleLoop · LinkHoleFeatureBySideWall · ReadCreatedByFeature · FindHoleFeatureBySeed · CountClusterLink · AddToCluster) · ResultModel.vb (LoopCounters) · MatchingEngine.vb (WriteLoopDiagnostics · WriteLinkSection)
+
+## W08 · 연계 2차와 교차 검증 계산 방식
+- 결정: 연계 2차는 리프 루프 수집이 끝난 뒤 리프마다 한 번 HoleFeature 전체 HoleCenterPoints 를 조립품 좌표 mm 후보 목록(숫자 · 문자열만)으로 읽고, 1차 실패 묶음에만 가장 가까운 후보(≤ 0.02 mm)를 적용한다. 교차 검증은 같은 후보 목록으로 모든 묶음에 대해 센다. 점은 SketchPoint.Geometry3d · SketchPoint3D.Geometry · WorkPoint.Point · Point 로 TypeOf 분기하고 모르는 타입은 "기타:TypeName" 으로 개수만 센다. 점은 Copy() 후 TransformBy(리프 Transformation) 한 번. 탭은 HoleFeature 단위로 한 번 읽어 후보에 담는다. 1차 성공 묶음의 탭 읽기 실패 사유는 strLinkNote 에 남고, 묶음별 탭 목록 마지막 열(비고)에 출력한다. 묶음별 1차 CreatedByFeature Type 이름은 CollectHoleClusters 안 리프 단위 리스트로만 들고 HoleCluster 에 넣지 않는다
+- 대안: 묶음마다 HoleFeatures 를 다시 순회 · 2차 결과를 1차 성공 묶음에도 덮어씀 · 1차 Type 이름을 HoleCluster 필드로 추가
+- 이유: COM 호출을 리프당 한 번으로 줄이고 COM 객체를 함수 밖에 두지 않음(W05 결정 · W08 시작 전 합의). 연계 필드 5개 외의 진단 값은 모델에 넣지 않음(W08 decisions "연계 1차 카운터 의미와 경로 기록 방식")
+- 영향 파일: src/HoleCheckAddIn/CollectFromPart.vb (CollectHoleClusters · LinkHoleFeatureBySideWall · ReadHoleTap · LinkHoleFeatureByCenter · ReadHoleCenterCandidates · ReadCenterPoint · FindNearestCandidate · HoleCenterCandidate) · Globals.vb (dblLinkCenterToleranceMillimeter) · ResultModel.vb (LoopCounters) · MatchingEngine.vb (WriteLinkSection · WriteLinkStage2Section · WriteCountDictionary)

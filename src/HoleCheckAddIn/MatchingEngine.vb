@@ -225,6 +225,66 @@ Public Module MatchingEngine
             intClusterNumber += 1
         Next
         objText.AppendLine()
+
+        WriteLinkStage2Section(objText, colClusters, objCounters)
+    End Sub
+
+    ' W08 8-4 · 연계 2차 · 교차 검증 · 묶음별 탭 목록 · 연계 (W08) 섹션 끝에 이어 쓴다
+    Private Sub WriteLinkStage2Section(ByVal objText As System.Text.StringBuilder, ByVal colClusters As System.Collections.Generic.List(Of HoleCluster), ByVal objCounters As LoopCounters)
+        objText.AppendLine("---- 연계 2차 (1차 실패 묶음만 · 리프 HoleFeature 전체 HoleCenterPoints · Copy 후 리프 Transformation 1회 · 중심 거리 ≤ " & FormatDouble(dblLinkCenterToleranceMillimeter) & " mm) ----")
+        objText.AppendLine("2차 가동 묶음 수: " & objCounters.intLink2RunCount.ToString())
+        objText.AppendLine("2차 성공 묶음 수: " & objCounters.intLink2SuccessCount.ToString())
+        objText.AppendLine("2차 실패 묶음 수: " & objCounters.intLink2FailCount.ToString())
+        objText.AppendLine("HoleFeature 단위 읽기 실패 (리프마다): " & objCounters.intHoleCenterReadFailedCount.ToString())
+        objText.AppendLine("HoleCenterPoints 항목 타입별 개수 (리프마다 읽은 점 기준):")
+        WriteCountDictionary(objText, objCounters.colHoleCenterPointTypeCounts)
+        objText.AppendLine()
+
+        objText.AppendLine("---- 교차 검증 (판정에 안 씀 · 2차를 모든 묶음에 적용) ----")
+        objText.AppendLine("2차 단독 성공 묶음 수: " & objCounters.intCrossCheckSuccessCount.ToString() & " / " & colClusters.Count.ToString())
+        objText.AppendLine("1차 CreatedByFeature 종류별 2차 성공 (종류 · 묶음 수 · 2차 성공):")
+        Dim colTypeNames As New System.Collections.Generic.List(Of String)(objCounters.colCreatedByFeatureTypeCounts.Keys)
+        colTypeNames.Sort(System.StringComparer.Ordinal)
+        For Each strTypeName As String In colTypeNames
+            Dim intSuccessCount As Integer = 0
+            objCounters.colCrossCheckSuccessByFeatureType.TryGetValue(strTypeName, intSuccessCount)
+            objText.AppendLine(JoinTab(strTypeName, objCounters.colCreatedByFeatureTypeCounts(strTypeName).ToString(), intSuccessCount.ToString()))
+        Next
+        objText.AppendLine("1차 성공 · 2차 성공 묶음 중 피처 이름 같음: " & objCounters.intCrossCheckSameNameCount.ToString())
+        objText.AppendLine("1차 성공 · 2차 성공 묶음 중 피처 이름 다름: " & objCounters.intCrossCheckDifferentNameCount.ToString())
+        objText.AppendLine()
+
+        objText.AppendLine("---- 묶음별 탭 목록 (" & colClusters.Count.ToString() & "개) ----")
+        ' 마지막 열 비고 = strLinkNote · 1차 성공 묶음의 탭 읽기 실패 사유가 다른 곳에 나오지 않아 붙인다
+        objText.AppendLine(JoinTab("리프 번호", "occurrence", "묶음 번호", "연계 단계", "피처 이름", "Tapped", "ThreadDesignation", "비고"))
+        ' 묶음 번호는 묶음 목록 섹션과 같은 규칙 (리프 안에서 0부터)
+        Dim intPreviousLeafIndex As Integer = -1
+        Dim intClusterNumber As Integer = 0
+        For Each objCluster As HoleCluster In colClusters
+            If objCluster.intLeafIndex <> intPreviousLeafIndex Then
+                intPreviousLeafIndex = objCluster.intLeafIndex
+                intClusterNumber = 0
+            End If
+            objText.AppendLine(JoinTab(objCluster.intLeafIndex.ToString(),
+                                       objCluster.strOccurrenceName,
+                                       intClusterNumber.ToString(),
+                                       objCluster.intLinkStage.ToString(),
+                                       objCluster.strHoleFeatureName,
+                                       objCluster.bolTapped.ToString(),
+                                       objCluster.strThreadDesignation,
+                                       objCluster.strLinkNote))
+            intClusterNumber += 1
+        Next
+        objText.AppendLine()
+    End Sub
+
+    ' W08 8-4 · 이름별 개수 · 이름 순 (Ordinal) · 키와 값을 탭으로
+    Private Sub WriteCountDictionary(ByVal objText As System.Text.StringBuilder, ByVal colCounts As System.Collections.Generic.Dictionary(Of String, Integer))
+        Dim colNames As New System.Collections.Generic.List(Of String)(colCounts.Keys)
+        colNames.Sort(System.StringComparer.Ordinal)
+        For Each strName As String In colNames
+            objText.AppendLine(JoinTab(strName, colCounts(strName).ToString()))
+        Next
     End Sub
 
     ' 거리 오름차순 · 같으면 리프 A · 리프 B 번호 순
