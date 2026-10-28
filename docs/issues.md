@@ -262,3 +262,9 @@
 - 원인: w06-done 의 AxisMatching.vb 는 리프 SurfaceBodies 의 면(색 표시 첫 아이템 TypeName FaceProxy)에서 invFace.CreatedByFeature 를 NativeObject 없이 직접 호출했고, 317/317 홀 확정 · M7 윗판 ExtrudeFeature 경로가 나옴. 문서 설명과 실제 동작이 다르며 이유는 미확인 (추정)
 - 처리: 8-3 은 프록시 면에서 직접 호출하고, Nothing 이면 NativeObject 로 재시도. 두 경로의 건수를 진단 txt 에 기록해 실측으로 확정
 - 왜 예측 못 했나: 경로표에 이름 · 타입만 적고 Interop 설명 문구를 확인하지 않았다. W08 예측의 근거였던 W06 실측과는 일치함
+
+## W08 · M7 연계 1차 실패가 예측 8묶음과 달리 4묶음 (윗판만)
+- 증상: 8-3 실행 Loop txt (M7_20261028_155351) 연계 섹션에서 1차 성공 4 · 실패 4. 실패 4개는 모두 리프 1 M7_윗판:1 · 사유 "구멍 피처 아님 · 부모 없음 (kExtrudeFeatureProxyObject:돌출2)". 리프 0 M7_아랫판:1 의 4묶음은 kHoleFeatureProxyObject 로 성공. W08.md 예측은 "M7 8묶음은 ExtrudeFeature 라 연계 실패"
+- 원인: M7 은 아랫판이 HoleFeature · 윗판만 압출컷(ExtrudeFeature)인 모델. 예측은 모델 이름(M7_압출컷)만 보고 두 판 모두 압출컷이라고 가정함 (W06 근거도 "M7 윗판 ExtrudeFeature 경로"로 윗판만 적혀 있었음)
+- 처리: 코드 변경 없음. 8-7 대조 표의 M7 연계 예측을 "윗판 4묶음 실패 · 아랫판 4묶음 성공" 으로 읽는다. 연계 2차(8-4)에서 윗판 4묶음이 HoleCenterPoints 로도 안 잡히는지 확인 (HoleFeature 가 없으므로 실패 예측)
+- 왜 예측 못 했나: 예측을 쓸 때 M7 리프별 부품 정의 · 피처 구성을 확인하지 않고 모델 이름으로 일반화했다. W06 기록에 윗판만 ExtrudeFeature 라고 적혀 있었는데 대조하지 않았다

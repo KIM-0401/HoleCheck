@@ -110,4 +110,6 @@ Friend Class LoopCounters
     Public intLinkNativeSuccessCount As Integer
     Public intLink2SuccessCount As Integer
     Public intLinkFailCount As Integer
+    ' W08 8-3 · CreatedByFeature 결과 Type 이름별 묶음 수 · 진단 출력용 · 문자열과 숫자만
+    Public colCreatedByFeatureTypeCounts As New System.Collections.Generic.Dictionary(Of String, Integer)()
 End Class

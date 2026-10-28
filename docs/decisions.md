@@ -210,3 +210,9 @@
 - 대안: 후보 범위로 걸러 짝 후보만 출력 · MatchPair 로 그리드 표시
 - 이유: W07 은 매칭 · 판정을 연결하지 않는 주간(W07.md 목표). 전체 출력이라 W06 쌍별 비교 18쌍과 대조할 수 있었음(3 mm 미만 18줄 = W06 18쌍)
 - 영향 파일: src/HoleCheckAddIn/MatchingEngine.vb (WriteLeafPairNearest · CompareLeafPairNearest · FormatDiameterList) · CollectFromPart.vb (CollectHoleClusters)
+
+## W08 · 연계 1차 카운터 의미와 경로 기록 방식
+- 결정: 연계 카운터는 묶음 단위로 새 묶음을 만든 첫 루프의 결과만 센다. intLinkProxySuccessCount · intLinkNativeSuccessCount 는 CreatedByFeature 를 어느 경로에서 얻었는지, intLinkFailCount 는 프록시 · NativeObject 모두 Nothing(옆벽 없음 포함)인 묶음 수. HoleFeature 를 찾은 1차 성공 / 실패 묶음 수는 HoleCluster.intLinkStage 로 진단에서 따로 센다. 경로와 CreatedByFeature Type 이름은 ReadCircleLoop 의 ByRef 인자로 호출자에게 넘기고, Type 이름별 묶음 수는 LoopCounters.colCreatedByFeatureTypeCounts(Dictionary(Of String, Integer))에 담는다. 시드 역추적의 첫 부모는 인덱서 대신 For Each 첫 항목으로 얻는다
+- 대안: intLinkFailCount = 1차 실패(HoleFeature 못 찾음) 묶음 수 · 경로를 LoopCircleInfo 필드로 추가 · 루프 단위 집계
+- 이유: 8-3 지시의 진단 카운터 3개(프록시 직접 · NativeObject 경유 · 둘 다 Nothing)와 LoopCounters 필드 3개를 맞춤. 연계 필드 5개 외의 진단 값을 HoleCluster 로 복사하지 않으려고 ByRef 로 넘김. ObjectCollection 인덱서 시작 번호가 미확인(api_paths.md)
+- 영향 파일: src/HoleCheckAddIn/CollectFromPart.vb (CollectHoleClusters · ReadCircleLoop · LinkHoleFeatureBySideWall · ReadCreatedByFeature · FindHoleFeatureBySeed · CountClusterLink · AddToCluster) · ResultModel.vb (LoopCounters) · MatchingEngine.vb (WriteLoopDiagnostics · WriteLinkSection)

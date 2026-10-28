@@ -100,6 +100,8 @@ Public Module MatchingEngine
 
         WriteLeafPairNearest(objText, colLeafSummaries, colClusters)
 
+        WriteLinkSection(objText, colClusters, objCounters)
+
         Dim strDocumentName As String = System.IO.Path.GetFileNameWithoutExtension(invAssemblyDocument.DisplayName)
         For Each chrInvalid As Char In System.IO.Path.GetInvalidFileNameChars()
             strDocumentName = strDocumentName.Replace(chrInvalid, "_"c)
@@ -174,6 +176,53 @@ Public Module MatchingEngine
                                        objPair.intClusterNumberB.ToString(),
                                        FormatDiameterList(objPair.objClusterB),
                                        FormatDouble(objPair.dblDistance)))
+        Next
+        objText.AppendLine()
+    End Sub
+
+    ' W08 8-3 · 연계 1차 결과 · 묶음 단위 · 기존 섹션 뒤에 붙인다
+    Private Sub WriteLinkSection(ByVal objText As System.Text.StringBuilder, ByVal colClusters As System.Collections.Generic.List(Of HoleCluster), ByVal objCounters As LoopCounters)
+        Dim intLinkedCount As Integer = 0
+        For Each objCluster As HoleCluster In colClusters
+            If objCluster.intLinkStage = 1 Then
+                intLinkedCount += 1
+            End If
+        Next
+
+        objText.AppendLine("==== 연계 (W08) ====")
+        objText.AppendLine("기준: 묶음 첫 루프의 첫 edge → 평면 아닌 인접 면(옆벽) → CreatedByFeature (프록시 직접 · Nothing 이면 NativeObject) → 첫 부모만 따라 올라감 (깊이 상한 " & intMaxFeatureDepth.ToString() & ")")
+        objText.AppendLine("1차 성공 묶음 수: " & intLinkedCount.ToString())
+        objText.AppendLine("1차 실패 묶음 수: " & (colClusters.Count - intLinkedCount).ToString())
+        objText.AppendLine("CreatedByFeature · 프록시 직접 성공: " & objCounters.intLinkProxySuccessCount.ToString())
+        objText.AppendLine("CreatedByFeature · NativeObject 경유 성공: " & objCounters.intLinkNativeSuccessCount.ToString())
+        objText.AppendLine("CreatedByFeature · 둘 다 Nothing (옆벽 없음 포함): " & objCounters.intLinkFailCount.ToString())
+        objText.AppendLine()
+
+        objText.AppendLine("---- CreatedByFeature 결과 타입별 묶음 수 ----")
+        Dim colTypeNames As New System.Collections.Generic.List(Of String)(objCounters.colCreatedByFeatureTypeCounts.Keys)
+        colTypeNames.Sort(System.StringComparer.Ordinal)
+        For Each strTypeName As String In colTypeNames
+            objText.AppendLine(JoinTab(strTypeName, objCounters.colCreatedByFeatureTypeCounts(strTypeName).ToString()))
+        Next
+        objText.AppendLine()
+
+        objText.AppendLine("---- 1차 실패 목록 (" & (colClusters.Count - intLinkedCount).ToString() & "개) ----")
+        objText.AppendLine(JoinTab("리프 번호", "occurrence", "묶음 번호", "사유"))
+        ' 묶음 번호는 묶음 목록 섹션과 같은 규칙 (리프 안에서 0부터)
+        Dim intPreviousLeafIndex As Integer = -1
+        Dim intClusterNumber As Integer = 0
+        For Each objCluster As HoleCluster In colClusters
+            If objCluster.intLeafIndex <> intPreviousLeafIndex Then
+                intPreviousLeafIndex = objCluster.intLeafIndex
+                intClusterNumber = 0
+            End If
+            If objCluster.intLinkStage <> 1 Then
+                objText.AppendLine(JoinTab(objCluster.intLeafIndex.ToString(),
+                                           objCluster.strOccurrenceName,
+                                           intClusterNumber.ToString(),
+                                           objCluster.strLinkNote))
+            End If
+            intClusterNumber += 1
         Next
         objText.AppendLine()
     End Sub
