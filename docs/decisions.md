@@ -228,3 +228,9 @@
 - 대안: List.Sort 를 그대로 씀(불안정 정렬이라 동률 순서가 입력 순서와 무관) · LINQ OrderBy(기본 Imports 꺼짐 · System.Core 참조 의존) · 후보 수를 진단에서 다시 셈
 - 이유: 동률 3키 정렬은 14주차라 키를 늘리지 않되, 실행마다 같은 결과가 나오게 생성 순서로만 묶음. 지시된 RunMatching 시그니처를 지키면서 진단에 후보 수를 쓰려고 래퍼로 나눔
 - 영향 파일: src/HoleCheckAddIn/MatchingEngine.vb (RunLoopCollection · RunMatching · RunMatchingWithCount · CompareMatchCandidate · CreateMatchPair · FormatLinkStage · FormatTap · WriteLoopDiagnostics · WriteMatchingSection · CompareLeafPairKey · MatchCandidate) · HoleCheckForm.vb (OnRunClick)
+
+## W08 · 상태 라벨 "연계 실패 묶음" 은 2차까지 끝난 뒤 intLinkStage 0 인 묶음 수
+- 결정: 폼 상태 라벨의 "연계 실패 묶음 N" 은 colHoleClusters 중 intLinkStage = 0 인 묶음 수로 센다. 그리드 행 순서는 colMatchPairs 순서(거리 오름차순) 그대로, 판정 열은 strJudgement("OK" · "위치 불일치") 그대로, NG = 확정 − OK.
+- 대안: LoopCounters.intLinkFailCount (1차 CreatedByFeature 둘 다 Nothing 인 묶음 수) 를 그대로 표시
+- 이유: intLinkFailCount 는 1차 기준이라 2차가 성공한 묶음도 실패로 센다. 화면에는 최종 연계 결과가 맞다. 현재 모델(M7 4 · 홀간/nested 0)은 2차 성공이 0 이라 두 값이 같다. RunLoopCollection 은 LoopCounters 를 돌려주지 않아 폼에서 쓰려면 시그니처를 또 바꿔야 한다.
+- 영향 파일: src/HoleCheckAddIn/HoleCheckForm.vb (OnRunClick · FillGrid · OnGridCellDoubleClick · BuildControls)

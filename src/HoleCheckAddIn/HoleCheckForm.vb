@@ -5,13 +5,14 @@ Option Explicit On
 ' 입력 2개(후보 범위 · 정렬 공차) → RunAxisMatching → 4열 그리드 · 더블클릭 시 Camera.Fit 후 목표점으로 이동
 ' W06 · 실행 후 HighlightSet 색 표시 (홀 면 초록 · 바깥 링 주황)
 ' W07 · 실행 버튼은 EdgeLoop 수집(RunLoopCollection)만 · 그리드는 비우고 상태 라벨에 요약 · 상세는 Loop 진단 txt
+' W08 8-6 · RunLoopCollection 의 매칭 결과(MatchPair)를 8열 그리드에 표시 · 더블클릭 줌 재연결 · 색 표시는 계속 미연결
 Public Class HoleCheckForm
     Inherits System.Windows.Forms.Form
 
     Private invApplication As Inventor.Application
 
     ' 그리드 줄 번호(0부터) = 이 목록의 인덱스 · 정렬을 막아 순서를 유지한다
-    ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결 (지금은 항상 비어 있다)
+    ' W08 8-6 · RunLoopCollection 의 colMatchPairs (거리 오름차순)
     Private colResults As New System.Collections.Generic.List(Of MatchPair)()
 
     Private objCandidateRangeInput As System.Windows.Forms.NumericUpDown
@@ -70,7 +71,7 @@ Public Class HoleCheckForm
         objStatusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
         objStatusLabel.Text = "실행 전"
 
-        ' 그리드 4열
+        ' W08 8-6 · 그리드 8열 · 열 폭은 기본값 (부품명이 넘쳐도 고치지 않는다)
         objResultGrid = New System.Windows.Forms.DataGridView()
         objResultGrid.Dock = System.Windows.Forms.DockStyle.Fill
         objResultGrid.ReadOnly = True
@@ -80,10 +81,14 @@ Public Class HoleCheckForm
         objResultGrid.MultiSelect = False
         objResultGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect
         objResultGrid.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill
-        objResultGrid.Columns.Add("colNumber", "번호")
-        objResultGrid.Columns.Add("colErrorKind", "오류 종류")
-        objResultGrid.Columns.Add("colValue1", "값1 · 축간 거리(mm)")
-        objResultGrid.Columns.Add("colValue2", "값2 · A지름 / B지름(mm)")
+        objResultGrid.Columns.Add("colNumber", "No.")
+        objResultGrid.Columns.Add("colJudgement", "판정")
+        objResultGrid.Columns.Add("colOccurrenceA", "부품 A")
+        objResultGrid.Columns.Add("colOccurrenceB", "부품 B")
+        objResultGrid.Columns.Add("colDistance", "거리(mm)")
+        objResultGrid.Columns.Add("colLinkStage", "타입")
+        objResultGrid.Columns.Add("colTapA", "탭 A")
+        objResultGrid.Columns.Add("colTapB", "탭 B")
         For Each objColumn As System.Windows.Forms.DataGridViewColumn In objResultGrid.Columns
             objColumn.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable
         Next
@@ -141,27 +146,39 @@ Public Class HoleCheckForm
                 Return
             End If
 
-            ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결 · 그리드는 비운다 (열 정의는 유지)
+            ' 실행 중 예외가 나도 이전 결과가 남지 않도록 먼저 비운다
             colResults = New System.Collections.Generic.List(Of MatchPair)()
             FillGrid()
 
-            ' W07 7-6 · EdgeLoop 수집만 실행 · 색 표시(HighlightFaces)는 호출하지 않는다
+            ' W07 7-6 · 색 표시(HighlightFaces)는 호출하지 않는다
             Dim strLoopDiagnosticPath As String = ""
-            ' W08 8-5 · 공차 입력 2개를 Cap(후보 범위) · Tol(정렬 공차)로 넘긴다 · 매칭 결과 표시는 8-6
+            ' W08 8-5 · 공차 입력 2개를 Cap(후보 범위) · Tol(정렬 공차)로 넘긴다
             Dim colMatchPairs As System.Collections.Generic.List(Of MatchPair) = Nothing
             Dim colHoleClusters As System.Collections.Generic.List(Of HoleCluster) = MatchingEngine.RunLoopCollection(invAssemblyDocument, dblCandidateRange, dblAlignmentTolerance, strLoopDiagnosticPath, colMatchPairs)
 
-            ' 리프 수는 수집과 같은 순회(AllLeafOccurrences)의 개수 · 묶음이 없는 리프도 센다
-            Dim intLeafCount As Integer = invAssemblyDocument.ComponentDefinition.Occurrences.AllLeafOccurrences().Count
-            Dim intMultiDiameterClusterCount As Integer = 0
-            For Each objCluster As HoleCluster In colHoleClusters
-                If objCluster.colDiameters.Count >= 2 Then
-                    intMultiDiameterClusterCount += 1
+            ' W08 8-6 · 행 순서 = RunMatching 결과 순서 (거리 오름차순) 그대로
+            If colMatchPairs IsNot Nothing Then
+                colResults = colMatchPairs
+            End If
+            FillGrid()
+
+            Dim intOkCount As Integer = 0
+            For Each objPair As MatchPair In colResults
+                If objPair.strJudgement = "OK" Then
+                    intOkCount += 1
                 End If
             Next
-            objStatusLabel.Text = "리프 " & intLeafCount.ToString() &
-                                  " · 홀 묶음 " & colHoleClusters.Count.ToString() &
-                                  " · 지름 2개 이상 묶음 " & intMultiDiameterClusterCount.ToString() &
+            ' 연계 실패 묶음 = 2차까지 끝난 뒤 intLinkStage 0 인 묶음 (진단 txt 의 intLinkFailCount 는 1차 기준이라 다를 수 있다)
+            Dim intLinkFailClusterCount As Integer = 0
+            For Each objCluster As HoleCluster In colHoleClusters
+                If objCluster.intLinkStage = 0 Then
+                    intLinkFailClusterCount += 1
+                End If
+            Next
+            objStatusLabel.Text = "확정 " & colResults.Count.ToString() &
+                                  " · OK " & intOkCount.ToString() &
+                                  " · NG " & (colResults.Count - intOkCount).ToString() &
+                                  " · 연계 실패 묶음 " & intLinkFailClusterCount.ToString() &
                                   " · " & System.IO.Path.GetFileName(strLoopDiagnosticPath)
         Catch objException As System.Exception
             System.Windows.Forms.MessageBox.Show(objException.Message & System.Environment.NewLine & System.Environment.NewLine & objException.StackTrace, "HoleCheck · 실행 오류")
@@ -250,10 +267,22 @@ Public Class HoleCheckForm
         Next
     End Sub
 
-    ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결 · 지금은 행을 비우기만 한다 (상태 라벨은 OnRunClick 이 쓴다)
+    ' W08 8-6 · colResults 를 8열로 표시 · 상태 라벨은 OnRunClick 이 쓴다
     Private Sub FillGrid()
         objResultGrid.Rows.Clear()
         objSelectionLabel.Text = ""
+
+        For intIndex As Integer = 0 To colResults.Count - 1
+            Dim objPair As MatchPair = colResults(intIndex)
+            objResultGrid.Rows.Add((intIndex + 1).ToString(),
+                                   objPair.strJudgement,
+                                   objPair.strOccurrenceNameA,
+                                   objPair.strOccurrenceNameB,
+                                   FormatMillimeter(objPair.dblCenterDistance),
+                                   objPair.strLinkStageA & "/" & objPair.strLinkStageB,
+                                   objPair.strTapA,
+                                   objPair.strTapB)
+        Next
     End Sub
 
     Private Sub OnGridSelectionChanged(ByVal objSender As Object, ByVal objArgs As System.EventArgs)
@@ -266,19 +295,19 @@ Public Class HoleCheckForm
     End Sub
 
     ' 더블클릭 · 계획서 5주차대로 Camera.Fit 후 목표점 지정 · Eye는 계산하지 않는다
-    ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결 · 행이 없어 도달하지 않음 · MatchPair 에 목표점이 없어 Zoom 호출을 뺐다 (Zoom.vb 는 유지)
+    ' W08 8-6 · 목표점 = 두 묶음 중심의 중점 (MatchPair.dblTargetX/Y/Z · mm) · Zoom.vb 는 그대로
     Private Sub OnGridCellDoubleClick(ByVal objSender As Object, ByVal objArgs As System.Windows.Forms.DataGridViewCellEventArgs)
         Try
             Dim objResult As MatchPair = GetResultAt(objArgs.RowIndex)
             If objResult Is Nothing Then
                 Return
             End If
+            Zoom.MoveCameraToTarget(invApplication, objResult.dblTargetX, objResult.dblTargetY, objResult.dblTargetZ)
         Catch objException As System.Exception
             System.Windows.Forms.MessageBox.Show(objException.Message & System.Environment.NewLine & System.Environment.NewLine & objException.StackTrace, "HoleCheck · 이동 오류")
         End Try
     End Sub
 
-    ' W07 · 매칭 미연결 · W08 에서 MatchPair 로 재연결
     Private Function GetResultAt(ByVal intRowIndex As Integer) As MatchPair
         If intRowIndex < 0 OrElse intRowIndex >= colResults.Count Then
             Return Nothing
