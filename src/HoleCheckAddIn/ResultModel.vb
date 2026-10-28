@@ -15,6 +15,13 @@ Public Class LoopCircleInfo
     Public Property dblCenterZ As Double
     Public Property dblDiameter As Double
     Public Property intLoopEdgeCount As Integer
+    ' W08 8-2 · HoleFeature 연계 결과 · 숫자와 문자열만 (W05 결정) · 이번 단계에서는 채우지 않는다
+    Public Property strHoleFeatureName As String = ""
+    Public Property bolTapped As Boolean
+    Public Property strThreadDesignation As String = ""
+    ' 0 = 연계 실패 · 1 = 옆벽(CreatedByFeature) · 2 = 중심 거리(HoleCenterPoints)
+    Public Property intLinkStage As Integer
+    Public Property strLinkNote As String = ""
 
 End Class
 
@@ -28,6 +35,13 @@ Public Class HoleCluster
     Public Property dblCenterZ As Double
     Public ReadOnly Property colDiameters As New System.Collections.Generic.List(Of Double)()
     Public Property intCircleCount As Integer
+    ' W08 8-2 · HoleFeature 연계 결과 · 숫자와 문자열만 (W05 결정) · 이번 단계에서는 채우지 않는다
+    Public Property strHoleFeatureName As String = ""
+    Public Property bolTapped As Boolean
+    Public Property strThreadDesignation As String = ""
+    ' 0 = 연계 실패 · 1 = 옆벽(CreatedByFeature) · 2 = 중심 거리(HoleCenterPoints)
+    Public Property intLinkStage As Integer
+    Public Property strLinkNote As String = ""
 
     ' 지름을 오름차순 위치에 넣고 원 개수를 하나 늘린다 · 같은 지름도 버리지 않는다
     Public Sub AddDiameter(ByVal dblDiameter As Double)
@@ -46,10 +60,22 @@ Public Class MatchPair
 
     Public Property strOccurrenceNameA As String = ""
     Public Property strOccurrenceNameB As String = ""
+    ' W08 8-2 · 리프 번호 (A = 리프 번호가 작은 쪽 · 배타 사용 집합 기준)
+    Public Property intLeafIndexA As Integer
+    Public Property intLeafIndexB As Integer
     Public Property intClusterIndexA As Integer
     Public Property intClusterIndexB As Integer
     Public Property dblCenterDistance As Double
     Public Property strJudgement As String = ""
+    ' W08 8-2 · 줌 목표점 = 두 묶음 중심의 중점 (mm · 조립품 좌표)
+    Public Property dblTargetX As Double
+    Public Property dblTargetY As Double
+    Public Property dblTargetZ As Double
+    ' W08 8-2 · 그리드 "타입" · "탭 A/B" 열 표시용 문자열 · 이번 단계에서는 채우지 않는다
+    Public Property strLinkStageA As String = ""
+    Public Property strLinkStageB As String = ""
+    Public Property strTapA As String = ""
+    Public Property strTapB As String = ""
 
 End Class
 
@@ -79,4 +105,9 @@ Friend Class LoopCounters
     Public intMultiEdgeAcceptedLoopCount As Integer
     Public intClusterCount As Integer
     Public intMultiDiameterClusterCount As Integer
+    ' W08 8-2 · HoleFeature 연계 결과 수 · 묶음 단위 · 8-3/8-4 에서 채움
+    Public intLinkProxySuccessCount As Integer
+    Public intLinkNativeSuccessCount As Integer
+    Public intLink2SuccessCount As Integer
+    Public intLinkFailCount As Integer
 End Class

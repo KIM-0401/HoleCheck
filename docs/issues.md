@@ -256,3 +256,9 @@
 - 원인: Git Bash printf 형식 문자열이 \r · \b 같은 역슬래시 이스케이프를 제어 문자로 해석함. 첫 정정 시도에서도 perl 치환 문자열 \b 가 셸 · perl 을 거치며 다시 \b 로 해석되어 바뀌지 않음
 - 처리: 두 곳 모두 perl 로 그 줄만 고침(두 번째는 chr(92) 로 역슬래시 생성). docs 아래 .md 전체에서 제어 문자 · 잘못된 UTF-8 0건 확인. 이후 문서 append 는 heredoc + 줄 끝 변환으로 함
 - 왜 예측 못 했나: CRLF 를 맞추려고 printf 로 \r\n 을 직접 쓰면서, 본문에 든 역슬래시도 같은 규칙으로 해석된다는 점을 따지지 않았다. 쓴 뒤 제어 문자 검사를 하지 않아 다음 단계에서 발견됨
+
+## W08 · (관찰) Interop 설명은 FaceProxy.CreatedByFeature 미지원이라 하나 W06 실측은 프록시에서 값이 나옴
+- 증상: 8-1 Interop XML 설명에 "FaceProxy 에서는 지원 안 함 · Nothing 반환" 문구가 있음. 그대로라면 연계 1차가 전부 실패
+- 원인: w06-done 의 AxisMatching.vb 는 리프 SurfaceBodies 의 면(색 표시 첫 아이템 TypeName FaceProxy)에서 invFace.CreatedByFeature 를 NativeObject 없이 직접 호출했고, 317/317 홀 확정 · M7 윗판 ExtrudeFeature 경로가 나옴. 문서 설명과 실제 동작이 다르며 이유는 미확인 (추정)
+- 처리: 8-3 은 프록시 면에서 직접 호출하고, Nothing 이면 NativeObject 로 재시도. 두 경로의 건수를 진단 txt 에 기록해 실측으로 확정
+- 왜 예측 못 했나: 경로표에 이름 · 타입만 적고 Interop 설명 문구를 확인하지 않았다. W08 예측의 근거였던 W06 실측과는 일치함
