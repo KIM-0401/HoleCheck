@@ -234,3 +234,45 @@
 - 대안: LoopCounters.intLinkFailCount (1차 CreatedByFeature 둘 다 Nothing 인 묶음 수) 를 그대로 표시
 - 이유: intLinkFailCount 는 1차 기준이라 2차가 성공한 묶음도 실패로 센다. 화면에는 최종 연계 결과가 맞다. 현재 모델(M7 4 · 홀간/nested 0)은 2차 성공이 0 이라 두 값이 같다. RunLoopCollection 은 LoopCounters 를 돌려주지 않아 폼에서 쓰려면 시그니처를 또 바꿔야 한다.
 - 영향 파일: src/HoleCheckAddIn/HoleCheckForm.vb (OnRunClick · FillGrid · OnGridCellDoubleClick · BuildControls)
+
+## W08 · HoleFeature 연계는 2단 · 1차 옆벽(CreatedByFeature) 실패 묶음에만 2차 중심 거리
+- 결정: 1차 = 묶음 첫 채택 루프의 edge → Edge.Faces 중 평면이 아닌 면(옆벽) → 프록시에서 CreatedByFeature 직접 → 첫 부모만 따라 시드 역추적(깊이 상한 intMaxFeatureDepth) → HoleFeature. 1차가 HoleFeature 를 못 찾은 묶음에만 2차 = 같은 리프 파트 HoleFeature 의 HoleCenterPoints 와 묶음 중심 거리 ≤ 0.02 mm. 2차를 모든 묶음에 돌린 교차 검증은 진단 줄로만 쓰고 연계 결과 · 판정에는 쓰지 않는다
+- 대안: 2차만 사용 · 두 경로가 일치할 때만 채택 · 2차 결과를 1차 성공 묶음에도 덮어씀
+- 이유: 8-3 실측 1차 588/588 (홀간 거리 확인-1 · nested_top · Hole 368 · RectangularPattern 148 · Mirror 72). 교차 검증 2차 단독 성공은 173/588 (Hole 173/368 · 직사각형 패턴 0/148 · 미러 0/72) 이라 2차만으로는 패턴 · 미러 복제 묶음을 못 잡는다. 1차와 2차가 모두 성공한 173 묶음은 피처 이름이 모두 같음 (다름 0). M7 윗판(ExtrudeFeature 돌출2) 4묶음은 두 단계 모두 실패
+- 되돌리기: 🟢 CollectFromPart.vb 한 파일 (CollectHoleClusters 의 2차 적용 조건) · 데이터 모델은 그대로
+- 영향 파일: src/HoleCheckAddIn/CollectFromPart.vb (CollectHoleClusters · LinkHoleFeatureBySideWall · FindHoleFeatureBySeed · LinkHoleFeatureByCenter) · Globals.vb (dblLinkCenterToleranceMillimeter)
+
+## W08 · CreatedByFeature 는 Interop 설명보다 실측을 따르고 NativeObject 경유는 예비 경로로만 둔다
+- 결정: 옆벽 Face 프록시에서 CreatedByFeature 를 바로 읽고, Nothing 일 때만 FaceProxy.NativeObject 에서 한 번 더 읽는다
+- 대안: Interop XML 설명("FaceProxy 미지원")대로 처음부터 NativeObject 경유 · 예비 경로 없이 프록시만
+- 이유: W06 실측과 8-3 실측 모두 프록시에서 값이 나옴 (프록시 직접 588 · NativeObject 경유 0). 문서와 실측이 다르면 실측을 쓴다. 다른 모델 · 버전에서 문서대로 Nothing 이 나올 때를 대비해 예비 경로는 남긴다. 예비 경로는 한 번도 타지 않아 동작은 미검증
+- 되돌리기: 🟢 CollectFromPart.vb 한 파일 (LinkHoleFeatureBySideWall)
+- 영향 파일: src/HoleCheckAddIn/CollectFromPart.vb (LinkHoleFeatureBySideWall · ReadCreatedByFeature) · docs/api_paths.md
+
+## W08 · Cap 2.0 유지 · 최종값은 10주차 줌 정리 후 조정 · 경계 보정 없음
+- 결정: W08 기준 실행은 Cap 2.0 · Tol 0.1 (폼 시작값 그대로). Cap 10 · 300 은 비교 실행만 한다. Cap 경계 보정(epsilon)은 넣지 않는다 (비교식은 W08 decisions "그리디 배타 매칭의 동률 순서 …" 대로 거리 ≤ dblCap). 최종 Cap 은 10주차 줌 정리 후 정한다 (v4)
+- 대안: Cap 10 으로 지금 올림 · Cap 에 작은 epsilon 을 더해 M4 2쌍을 살림
+- 이유: Cap 2.0 은 판 간격 2 mm 인 M4 에서 부동소수로 2쌍이 빠지지만 (issues "Cap 2.0 이 M4 …"), 원인이 확인됐고 Cap 10 에서는 M4 6줄이 돌아오며 그 외 확정 줄은 같다 (137). Cap 300 은 다른 모델끼리 152줄이 잡혀 NG 352 로 쓸 수 없다. 줌이 아직 해당 구멍으로 가지 않아 (W05 issues) 화면에서 짝을 확인할 수 없으므로 최종값은 그 뒤에 정한다. epsilon 은 경계 문제를 가릴 뿐이고 W08 범위 밖 ("Cap 경계 부동소수 보정")
+- 되돌리기: 🟢 Globals.vb dblDefaultCandidateRange 하나
+- 영향 파일: 없음 (코드 변경 없음 · 폼 시작값 Globals.vb dblDefaultCandidateRange = 2.0)
+
+## W08 · 부품명 열 넘침은 고치지 않고 보류 (v4)
+- 결정: 그리드 부품 A/B 열의 폭 · 표시 이름은 고치지 않는다 (열 폭 기본값). 부품 구분은 선택 행 아래 줄(occurrence 전체 이름)로 한다
+- 대안: 공통 접두("홀간 거리 확인 ") 제거 · 열 폭 고정 · 툴팁
+- 이유: W08 시작 전 합의 "부품명 열이 길어 화면을 넘치면 고치지 않고 기록 (결정 보류)" · 범위 밖 "부품명 열 해결". 8-6 화면에서 "홀간 거리 ..." 로 잘려 그리드만으로는 구분 불가 (issues "부품명 열이 잘려 …")
+- 되돌리기: 🟢 변경 없음
+- 영향 파일: 없음
+
+## W08 · 그리드 "타입" 열 = 연계 단계 A/B 문자열 · 탭 열 = ThreadDesignation
+- 결정: 타입 = strLinkStageA & "/" & strLinkStageB (각 1 · 2 · 없음, 예 1/1 · 1/없음). 탭 A/B = Tapped True 일 때 ThreadDesignation, 아니면 빈칸 (클리어런스 홀 · 연계 실패 모두 빈칸). 탭 ↔ 클리어런스 정합 판정은 하지 않는다 (12주차)
+- 대안: 타입 열에 피처 종류(Hole · 패턴 · 미러) · 탭 열에 FastenerSize 나 "클리어런스" 표시
+- 이유: W08 합의 "타입 열 = 연계 단계 표기". 탭은 FastenerSize · HoleDiameter 가 E_FAIL (W08 A) 이라 ThreadDesignation 만 읽는다. 클리어런스 정보(IsClearanceHole · FastenerSize)는 W04 Probe 로만 확인했고 이번 주는 읽지 않는다. 빈칸이 클리어런스인지 연계 실패인지는 타입 열("없음")로 구분한다
+- 되돌리기: 🟡 MatchingEngine.vb (FormatLinkStage · FormatTap) · HoleCheckForm.vb (FillGrid)
+- 영향 파일: src/HoleCheckAddIn/MatchingEngine.vb (CreateMatchPair · FormatLinkStage · FormatTap) · HoleCheckForm.vb (FillGrid)
+
+## W08 · 배포 루틴에 Addins 폴더 DLL 시각 확인을 넣는다
+- 결정: Inventor 완전 종료 → VS2022 Rebuild → scripts/deploy.ps1 → %APPDATA%\Autodesk\Inventor 2027\Addins\HoleCheckAddIn\HoleCheckAddIn.dll 수정 시각이 이번 빌드 이후인지 확인 → 실행. 결과 txt 를 읽을 때도 이번 단계의 새 섹션이 있는지 먼저 본다
+- 대안: deploy.ps1 출력만 봄 · deploy.ps1 에 시각 비교 추가 (스크립트 수정은 W08 범위 밖)
+- 이유: 8-4 첫 실행이 미배포 DLL(15:50:12 · 8-3 빌드)로 돌아 8-3 과 같은 txt 가 나옴 (issues "8-4 실행 txt 가 8-3 txt 와 같음"). deploy.ps1 은 Inventor 실행 중이면 exit 1 로 끝나는데 그 출력을 확인하지 않았다
+- 되돌리기: 🟢 절차만 · 코드 없음
+- 영향 파일: 없음 (절차)
